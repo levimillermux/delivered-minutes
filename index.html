@@ -159,109 +159,6 @@
             }
         }
 
-        /* Collapsible Sections */
-        .collapsible {
-            margin-bottom: 1.5rem;
-        }
-
-        .collapsible-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1rem;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--text-primary);
-            transition: all 0.2s;
-        }
-
-        .collapsible-header:hover {
-            border-color: var(--primary-color);
-        }
-
-        .collapsible-header.active {
-            border-radius: 8px 8px 0 0;
-            border-bottom-color: transparent;
-        }
-
-        .collapsible-icon {
-            transition: transform 0.2s;
-        }
-
-        .collapsible-header.active .collapsible-icon {
-            transform: rotate(90deg);
-        }
-
-        .collapsible-content {
-            display: none;
-            padding: 1rem;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-        }
-
-        .collapsible-content.active {
-            display: block;
-        }
-
-        /* Stream Type Selector */
-        .stream-type-selector {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .stream-type-btn {
-            flex: 1;
-            padding: 0.5rem;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .stream-type-btn:hover {
-            border-color: var(--primary-color);
-        }
-
-        .stream-type-btn.active {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-            color: white;
-        }
-
-        /* Checkbox Group */
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .checkbox-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--primary-color);
-        }
-
-        .checkbox-item label {
-            margin: 0;
-            font-weight: normal;
-            cursor: pointer;
-        }
-
         /* Player Section */
         .player-section {
             margin-top: 2rem;
@@ -296,29 +193,6 @@
         .player-placeholder-icon {
             font-size: 3rem;
             opacity: 0.5;
-        }
-
-        .quick-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-        }
-
-        .quick-btn {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-            background: var(--surface-light);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .quick-btn:hover {
-            color: var(--text-primary);
-            border-color: var(--text-secondary);
         }
 
         /* Player Info */
@@ -708,106 +582,7 @@
                     Playback ID
                     <span class="label-hint">- The Mux playback ID for the video</span>
                 </label>
-                <input type="text" id="playback-id" placeholder="e.g., EcHgOK9coz5K4rjSwOkoE7Y7O01201YMIC200RI6lNxnhs" required>
-            </div>
-
-            <div class="form-group">
-                <label>Stream Type</label>
-                <div class="stream-type-selector">
-                    <button type="button" class="stream-type-btn active" data-type="on-demand">On-Demand</button>
-                    <button type="button" class="stream-type-btn" data-type="live">Live</button>
-                    <button type="button" class="stream-type-btn" data-type="ll-live">Low-Latency Live</button>
-                </div>
-                <input type="hidden" id="stream-type" value="on-demand">
-            </div>
-
-            <!-- Signed URL Tokens -->
-            <div class="collapsible">
-                <div class="collapsible-header" id="tokens-header">
-                    <span class="collapsible-icon">&#9654;</span>
-                    <span>Signed URL Tokens (Optional)</span>
-                </div>
-                <div class="collapsible-content" id="tokens-content">
-                    <div class="form-group">
-                        <label for="playback-token">
-                            Playback Token
-                            <span class="label-hint">- JWT for video playback access</span>
-                        </label>
-                        <textarea id="playback-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="thumbnail-token">
-                            Thumbnail Token
-                            <span class="label-hint">- JWT for poster image</span>
-                        </label>
-                        <textarea id="thumbnail-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="storyboard-token">
-                            Storyboard Token
-                            <span class="label-hint">- JWT for timeline hover previews</span>
-                        </label>
-                        <textarea id="storyboard-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="drm-token">
-                            DRM Token
-                            <span class="label-hint">- JWT for DRM-protected content</span>
-                        </label>
-                        <textarea id="drm-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Player Options -->
-            <div class="collapsible">
-                <div class="collapsible-header" id="options-header">
-                    <span class="collapsible-icon">&#9654;</span>
-                    <span>Player Options</span>
-                </div>
-                <div class="collapsible-content" id="options-content">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="max-resolution">Max Resolution</label>
-                            <select id="max-resolution">
-                                <option value="">Auto</option>
-                                <option value="720p">720p</option>
-                                <option value="1080p">1080p</option>
-                                <option value="1440p">1440p</option>
-                                <option value="2160p">2160p (4K)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="start-time">
-                                Start Time
-                                <span class="label-hint">- In seconds</span>
-                            </label>
-                            <input type="number" id="start-time" placeholder="0" min="0" step="0.1">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Playback Options</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="autoplay">
-                                <label for="autoplay">Autoplay</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="muted">
-                                <label for="muted">Muted</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="loop">
-                                <label for="loop">Loop</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <input type="text" id="playback-id" placeholder="e.g., VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" value="VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" required>
             </div>
 
             <div class="btn-group">
@@ -824,15 +599,6 @@
                 </div>
             </div>
 
-            <div class="quick-actions">
-                <button class="quick-btn" id="btn-play">Play</button>
-                <button class="quick-btn" id="btn-pause">Pause</button>
-                <button class="quick-btn" id="btn-mute">Mute</button>
-                <button class="quick-btn" id="btn-unmute">Unmute</button>
-                <button class="quick-btn" id="btn-fullscreen">Fullscreen</button>
-                <button class="quick-btn" id="btn-pip">Picture-in-Picture</button>
-                <button class="quick-btn" id="btn-reload">Reload</button>
-            </div>
 
             <div class="player-info" id="player-info">
                 <h3>Player Info</h3>
@@ -942,15 +708,6 @@
             let muxPlayer = null;
             let infoInterval = null;
 
-            // Restore playback ID from URL if present
-            const urlParams = new URLSearchParams(window.location.search);
-            const savedPlaybackId = urlParams.get('id');
-            if (savedPlaybackId) {
-                document.getElementById('playback-id').value = savedPlaybackId;
-                const url = new URL(window.location);
-                url.searchParams.delete('id');
-                window.history.replaceState({}, '', url);
-            }
 
             // Data usage tracking
             let dataUsage = {
@@ -975,27 +732,6 @@
                 '#f472b6', '#a78bfa', '#34d399', '#fb923c'
             ];
 
-            // Stream type selector
-            const streamTypeBtns = document.querySelectorAll('.stream-type-btn');
-            const streamTypeInput = document.getElementById('stream-type');
-
-            streamTypeBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    streamTypeBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    streamTypeInput.value = btn.dataset.type;
-                });
-            });
-
-            // Collapsible sections
-            document.querySelectorAll('.collapsible-header').forEach(header => {
-                header.addEventListener('click', () => {
-                    const content = header.nextElementSibling;
-                    header.classList.toggle('active');
-                    content.classList.toggle('active');
-                });
-            });
-
             // Form submission
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -1006,26 +742,9 @@
             clearBtn.addEventListener('click', () => {
                 destroyPlayer();
                 form.reset();
-                streamTypeBtns.forEach(b => b.classList.remove('active'));
-                streamTypeBtns[0].classList.add('active');
-                streamTypeInput.value = 'on-demand';
+                document.getElementById('playback-id').value = 'VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc';
                 playerSection.style.display = 'none';
             });
-
-            // Quick action buttons
-            document.getElementById('btn-play').addEventListener('click', () => muxPlayer?.play());
-            document.getElementById('btn-pause').addEventListener('click', () => muxPlayer?.pause());
-            document.getElementById('btn-mute').addEventListener('click', () => { if (muxPlayer) muxPlayer.muted = true; });
-            document.getElementById('btn-unmute').addEventListener('click', () => { if (muxPlayer) muxPlayer.muted = false; });
-            document.getElementById('btn-fullscreen').addEventListener('click', () => muxPlayer?.requestFullscreen());
-            document.getElementById('btn-pip').addEventListener('click', () => {
-                if (document.pictureInPictureElement) {
-                    document.exitPictureInPicture();
-                } else {
-                    muxPlayer?.requestPictureInPicture();
-                }
-            });
-            document.getElementById('btn-reload').addEventListener('click', () => loadPlayer());
 
             function loadPlayer() {
                 destroyPlayer();
@@ -1038,35 +757,7 @@
 
                 muxPlayer = document.createElement('mux-player');
                 muxPlayer.setAttribute('playback-id', playbackId);
-
-                const streamType = document.getElementById('stream-type').value;
-                if (streamType !== 'on-demand') {
-                    muxPlayer.setAttribute('stream-type', streamType);
-                }
-
-                // Tokens
-                const playbackToken = document.getElementById('playback-token').value.trim();
-                const thumbnailToken = document.getElementById('thumbnail-token').value.trim();
-                const storyboardToken = document.getElementById('storyboard-token').value.trim();
-                const drmToken = document.getElementById('drm-token').value.trim();
-
-                if (playbackToken) muxPlayer.setAttribute('playback-token', playbackToken);
-                if (thumbnailToken) muxPlayer.setAttribute('thumbnail-token', thumbnailToken);
-                if (storyboardToken) muxPlayer.setAttribute('storyboard-token', storyboardToken);
-                if (drmToken) muxPlayer.setAttribute('drm-token', drmToken);
-
-                // Options
                 muxPlayer.style.setProperty('--media-accent-color', '#fa50b5');
-
-                const startTime = document.getElementById('start-time').value;
-                if (startTime) muxPlayer.setAttribute('start-time', startTime);
-
-                const maxResolution = document.getElementById('max-resolution').value;
-                if (maxResolution) muxPlayer.setAttribute('max-resolution', maxResolution);
-
-                if (document.getElementById('autoplay').checked) muxPlayer.setAttribute('autoplay', '');
-                if (document.getElementById('muted').checked) muxPlayer.setAttribute('muted', '');
-                if (document.getElementById('loop').checked) muxPlayer.setAttribute('loop', '');
 
                 playerWrapper.innerHTML = '';
                 playerWrapper.appendChild(muxPlayer);
@@ -1573,8 +1264,7 @@
                     document.getElementById('info-buffered').textContent = '0%';
                 }
 
-                const streamType = document.getElementById('stream-type').value;
-                document.getElementById('info-stream-type').textContent = streamType;
+                document.getElementById('info-stream-type').textContent = 'on-demand';
             }
 
             function updateState(state) {
