@@ -259,6 +259,7 @@
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 2rem;
         }
 
@@ -266,6 +267,12 @@
             text-align: center;
             flex-shrink: 0;
             cursor: help;
+        }
+
+        .billing-vs {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .billing-value {
@@ -637,7 +644,12 @@
                 </div>
 
                 <div class="billing-highlight">
-                    <div class="billing-main" data-tooltip="Delivery is measured per minute of video sent to the player. You pay for exact seconds with no minimum or rounding.">
+                    <div class="billing-main" data-tooltip="How long you've actually watched the video.">
+                        <div class="billing-value" id="kpi-watch-time">0:00</div>
+                        <div class="billing-label">Watch Time</div>
+                    </div>
+                    <div class="billing-vs">vs</div>
+                    <div class="billing-main" data-tooltip="Delivery is measured per minute of video sent to the player. This includes buffered content you haven't watched yet.">
                         <div class="billing-value" id="kpi-minutes-delivered">0:00</div>
                         <div class="billing-label">Minutes Delivered</div>
                     </div>
@@ -722,7 +734,10 @@
                 segments: [],
                 byRendition: {},
                 startTime: null,
-                currentLevel: null
+                currentLevel: null,
+                watchTime: 0,
+                lastWatchTime: 0,
+                isPlaying: false
             };
             let chartCtx = null;
             let minutesChartCtx = null;
@@ -781,7 +796,10 @@
                     segments: [],
                     byRendition: {},
                     startTime: Date.now(),
-                    currentLevel: null
+                    currentLevel: null,
+                    watchTime: 0,
+                    lastWatchTime: 0,
+                    isPlaying: false
                 };
                 document.getElementById('segment-log-entries').innerHTML = '';
                 updateDataUsageDisplay();
@@ -935,6 +953,7 @@
             }
 
             function updateDataUsageDisplay() {
+                document.getElementById('kpi-watch-time').textContent = formatDuration(dataUsage.watchTime);
                 document.getElementById('kpi-minutes-delivered').textContent = formatDuration(dataUsage.videoDuration);
                 document.getElementById('kpi-total-data').textContent = formatBytes(dataUsage.totalBytes);
                 document.getElementById('kpi-video-data').textContent = formatBytes(dataUsage.videoBytes);
@@ -1220,17 +1239,36 @@
             function setupPlayerEvents() {
                 if (!muxPlayer) return;
 
-                muxPlayer.addEventListener('play', () => updateState('Playing'));
-                muxPlayer.addEventListener('pause', () => updateState('Paused'));
+                muxPlayer.addEventListener('play', () => {
+                    dataUsage.isPlaying = true;
+                    dataUsage.lastWatchTime = muxPlayer.currentTime;
+                    updateState('Playing');
+                });
+                muxPlayer.addEventListener('pause', () => {
+                    dataUsage.isPlaying = false;
+                    updateState('Paused');
+                });
                 muxPlayer.addEventListener('waiting', () => updateState('Buffering'));
-                muxPlayer.addEventListener('ended', () => updateState('Ended'));
+                muxPlayer.addEventListener('ended', () => {
+                    dataUsage.isPlaying = false;
+                    updateState('Ended');
+                });
                 muxPlayer.addEventListener('error', (e) => {
+                    dataUsage.isPlaying = false;
                     updateState('Error');
                     console.error('Player error:', e);
                 });
 
                 muxPlayer.addEventListener('loadedmetadata', () => {
                     updateInfo();
+                });
+
+                muxPlayer.addEventListener('timeupdate', () => {
+                    if (dataUsage.isPlaying && muxPlayer.currentTime > dataUsage.lastWatchTime) {
+                        dataUsage.watchTime += muxPlayer.currentTime - dataUsage.lastWatchTime;
+                    }
+                    dataUsage.lastWatchTime = muxPlayer.currentTime;
+                    updateDataUsageDisplay();
                 });
             }
 
