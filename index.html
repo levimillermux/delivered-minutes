@@ -291,6 +291,34 @@
             margin-top: 0.5rem;
         }
 
+        /* Cache Notice */
+        .cache-notice {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .cache-notice-icon {
+            font-size: 1.25rem;
+            line-height: 1;
+            color: #fbbf24;
+        }
+
+        .cache-notice-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .cache-notice-text strong {
+            color: #fbbf24;
+        }
+
         /* Insight Box */
         .insight-box {
             display: flex;
@@ -655,6 +683,11 @@
                     </div>
                 </div>
 
+                <div class="cache-notice" id="cache-notice" style="display: none;">
+                    <div class="cache-notice-icon">&#9888;</div>
+                    <div class="cache-notice-text">Some segments are being served from browser cache. These were already billed when first downloaded and won't count again. <strong>Open in a private/incognito window for accurate fresh delivery tracking.</strong></div>
+                </div>
+
                 <div class="insight-box" id="insight-box">
                     <div class="insight-icon">&#128161;</div>
                     <div class="insight-text" id="insight-text">Start playback to see delivery insights. Notice how buffering ahead adds to minutes delivered even before you watch that content.</div>
@@ -800,6 +833,7 @@
                 accumulatedWatchTime = 0;
                 watchTimeStart = null;
                 document.getElementById('segment-log-entries').innerHTML = '';
+                document.getElementById('cache-notice').style.display = 'none';
                 updateDataUsageDisplay();
                 updateInsight();
                 drawCharts();
@@ -947,6 +981,11 @@
 
                 while (entries.children.length > 50) {
                     entries.removeChild(entries.lastChild);
+                }
+
+                // Show cache notice if cached content detected
+                if (segment.cached) {
+                    document.getElementById('cache-notice').style.display = 'flex';
                 }
             }
 
