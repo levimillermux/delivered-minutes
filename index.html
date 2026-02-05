@@ -573,7 +573,7 @@
     <div class="container">
         <header>
             <h1>Mux Minutes Delivered Calculator</h1>
-            <p class="subtitle">Visualize how Mux billing works in real-time</p>
+            <p class="subtitle">See exactly how delivery billing is calculated as video segments are sent to your player</p>
         </header>
 
         <form id="player-form">
@@ -632,12 +632,12 @@
 
             <div class="player-info">
                 <div class="education-header">
-                    <h3>Delivery & Billing Insights</h3>
-                    <p class="education-intro">Mux bills based on <strong>minutes delivered</strong> - the total duration of video segments sent from the CDN to the player. Watch how this metric changes as you play, seek, and switch quality levels.</p>
+                    <h3>Understanding Delivery Billing</h3>
+                    <p class="education-intro">Mux measures <strong>minutes delivered</strong> by counting the seconds of video sent to the player. This includes buffered content&mdash;if the player buffers 20 seconds ahead, those 20 seconds count toward delivery even if they're never watched.</p>
                 </div>
 
                 <div class="billing-highlight">
-                    <div class="billing-main" data-tooltip="The primary billing metric. Each video segment delivered from CDN adds its duration to this total. Quality level doesn't affect minutes - a 10-second segment at 1080p costs the same as 10 seconds at 480p.">
+                    <div class="billing-main" data-tooltip="Cost is per minute of video delivered. You pay for exact seconds with no minimum or rounding. The first 100,000 minutes delivered monthly are free.">
                         <div class="billing-value" id="kpi-minutes-delivered">0:00</div>
                         <div class="billing-label">Minutes Delivered</div>
                     </div>
@@ -645,23 +645,23 @@
 
                 <div class="insight-box" id="insight-box">
                     <div class="insight-icon">&#128161;</div>
-                    <div class="insight-text" id="insight-text">Start playback to see delivery insights...</div>
+                    <div class="insight-text" id="insight-text">Start playback to see delivery insights. Notice how buffering ahead adds to minutes delivered even before you watch that content.</div>
                 </div>
 
                 <div class="kpi-grid">
-                    <div class="kpi-card" data-tooltip="Total bytes downloaded from Mux CDN (video + audio). This shows bandwidth usage but doesn't directly affect billing.">
+                    <div class="kpi-card" data-tooltip="Total bytes downloaded from Mux CDN (video + audio). Bandwidth varies by quality level, but all resolutions cost the same per minute delivered.">
                         <div class="kpi-value" id="kpi-total-data">0 KB</div>
                         <div class="kpi-label">Data Downloaded</div>
                     </div>
-                    <div class="kpi-card" data-tooltip="Video data only. Higher resolutions use more bandwidth per minute but cost the same in minutes delivered.">
+                    <div class="kpi-card" data-tooltip="Video data only. Higher resolutions (1080p, 4K) use more bandwidth but cost the same in minutes delivered as lower resolutions.">
                         <div class="kpi-value" id="kpi-video-data">0 KB</div>
                         <div class="kpi-label">Video</div>
                     </div>
-                    <div class="kpi-card" data-tooltip="Audio is delivered separately. Typically much smaller than video data.">
+                    <div class="kpi-card" data-tooltip="Audio is delivered separately and charged at 1/10th the cost of 720p video.">
                         <div class="kpi-value" id="kpi-audio-data">0 KB</div>
                         <div class="kpi-label">Audio</div>
                     </div>
-                    <div class="kpi-card" data-tooltip="Segments served from browser cache don't count toward billing - they were already billed when first downloaded.">
+                    <div class="kpi-card" data-tooltip="Segments served from browser cache were already billed when first downloaded. Cached content doesn't count again.">
                         <div class="kpi-value" id="kpi-cached-data">0 KB</div>
                         <div class="kpi-label">From Cache</div>
                     </div>
@@ -694,7 +694,7 @@
         </div>
 
         <footer>
-            <p>Built with <a href="https://mux.com" target="_blank">Mux</a> | <a href="https://docs.mux.com/guides/video/track-delivery" target="_blank">Learn about Minutes Delivered</a></p>
+            <p>Built with <a href="https://mux.com" target="_blank">Mux</a> | <a href="https://www.mux.com/docs/pricing/video" target="_blank">Full Pricing Details</a></p>
         </footer>
     </div>
 
@@ -960,25 +960,25 @@
                 let insight = '';
 
                 if (delivered === 0) {
-                    insight = 'Start playback to see delivery insights. Try switching quality levels or seeking to see how it affects minutes delivered.';
+                    insight = 'Start playback to see delivery in action. Watch how buffering ahead increases minutes delivered&mdash;the player downloads segments before you watch them.';
                 } else if (switches > 0 && renditions.length > 1) {
                     const sorted = renditions.sort((a, b) => (b.duration || 0) - (a.duration || 0));
                     const topRendition = sorted[0];
-                    insight = `<strong>Quality switching detected:</strong> ${formatDuration(delivered)} delivered across ${renditions.length} quality levels. Most time (${formatDuration(topRendition.duration)}) at <strong>${topRendition.resolution}</strong>. Quality changes can cause segments to be re-downloaded at the new bitrate.`;
+                    insight = `<strong>Quality switching detected:</strong> ${formatDuration(delivered)} delivered across ${renditions.length} quality levels. Quality changes may re-download segments at the new bitrate. Remember: all resolutions cost the same per minute delivered.`;
                 } else if (renditions.length > 1) {
                     const sorted = renditions.sort((a, b) => (b.duration || 0) - (a.duration || 0));
                     const topRendition = sorted[0];
-                    insight = `<strong>Adaptive streaming in action:</strong> Most playback (${formatDuration(topRendition.duration)}) was at <strong>${topRendition.resolution}</strong>. The player automatically selects quality based on your connection speed. All quality levels cost the same per minute delivered.`;
+                    insight = `<strong>Adaptive streaming:</strong> ${formatDuration(delivered)} delivered, mostly at <strong>${topRendition.resolution}</strong>. The player selects quality based on your connection. Higher resolutions use more bandwidth but cost the same per minute.`;
                 } else if (renditions.length === 1) {
                     const rendition = renditions[0];
-                    insight = `<strong>Single quality playback:</strong> All ${formatDuration(delivered)} delivered at <strong>${rendition.resolution}</strong>. The player chose this quality based on your connection. Try a slower network to see quality adaptation.`;
+                    insight = `<strong>${formatDuration(delivered)} delivered</strong> at <strong>${rendition.resolution}</strong>. You're billed for exact seconds with no rounding. Try seeking ahead to see how the player buffers additional content.`;
                 } else {
-                    insight = `<strong>${formatDuration(delivered)} minutes delivered</strong> so far. Each segment the player downloads adds to this total, regardless of video quality.`;
+                    insight = `<strong>${formatDuration(delivered)} minutes delivered</strong> so far. Each video segment downloaded counts toward this total, including buffered content that hasn't been watched yet.`;
                 }
 
                 if (dataUsage.cachedBytes > 0) {
                     const cachedPercent = ((dataUsage.cachedBytes / (dataUsage.totalBytes + dataUsage.cachedBytes)) * 100).toFixed(0);
-                    insight += ` <em>${cachedPercent}% of requested data came from browser cache (not billed again).</em>`;
+                    insight += ` <em>${cachedPercent}% came from browser cache (already billed on first download).</em>`;
                 }
 
                 insightEl.innerHTML = insight;
