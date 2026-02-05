@@ -719,7 +719,9 @@
 
             let muxPlayer = null;
             let infoInterval = null;
-
+            let watchTimeInterval = null;
+            let watchTimeStart = null;
+            let accumulatedWatchTime = 0;
 
             // Data usage tracking
             let dataUsage = {
@@ -734,10 +736,7 @@
                 segments: [],
                 byRendition: {},
                 startTime: null,
-                currentLevel: null,
-                watchTime: 0,
-                lastWatchTime: 0,
-                isPlaying: false
+                currentLevel: null
             };
             let chartCtx = null;
             let minutesChartCtx = null;
@@ -796,11 +795,10 @@
                     segments: [],
                     byRendition: {},
                     startTime: Date.now(),
-                    currentLevel: null,
-                    watchTime: 0,
-                    lastWatchTime: 0,
-                    isPlaying: false
+                    currentLevel: null
                 };
+                accumulatedWatchTime = 0;
+                watchTimeStart = null;
                 document.getElementById('segment-log-entries').innerHTML = '';
                 updateDataUsageDisplay();
                 updateInsight();
@@ -952,8 +950,15 @@
                 }
             }
 
+            function getWatchTime() {
+                if (watchTimeStart !== null) {
+                    return accumulatedWatchTime + (Date.now() - watchTimeStart) / 1000;
+                }
+                return accumulatedWatchTime;
+            }
+
             function updateDataUsageDisplay() {
-                document.getElementById('kpi-watch-time').textContent = formatDuration(dataUsage.watchTime);
+                document.getElementById('kpi-watch-time').textContent = formatDuration(getWatchTime());
                 document.getElementById('kpi-minutes-delivered').textContent = formatDuration(dataUsage.videoDuration);
                 document.getElementById('kpi-total-data').textContent = formatBytes(dataUsage.totalBytes);
                 document.getElementById('kpi-video-data').textContent = formatBytes(dataUsage.videoBytes);
@@ -1223,6 +1228,13 @@
                     infoInterval = null;
                 }
 
+                if (watchTimeInterval) {
+                    clearInterval(watchTimeInterval);
+                    watchTimeInterval = null;
+                }
+                watchTimeStart = null;
+                accumulatedWatchTime = 0;
+
                 if (muxPlayer) {
                     const hls = muxPlayer._hls;
                     if (hls) {
@@ -1236,39 +1248,61 @@
                 minutesChartCtx = null;
             }
 
+            function startWatchTimer() {
+                if (watchTimeStart === null) {
+                    watchTimeStart = Date.now();
+                }
+                if (!watchTimeInterval) {
+                    watchTimeInterval = setInterval(updateDataUsageDisplay, 100);
+                }
+            }
+
+            function stopWatchTimer() {
+                if (watchTimeStart !== null) {
+                    accumulatedWatchTime += (Date.now() - watchTimeStart) / 1000;
+                    watchTimeStart = null;
+                }
+            }
+
             function setupPlayerEvents() {
                 if (!muxPlayer) return;
 
                 muxPlayer.addEventListener('play', () => {
-                    dataUsage.isPlaying = true;
-                    dataUsage.lastWatchTime = muxPlayer.currentTime;
+                    startWatchTimer();
                     updateState('Playing');
                 });
                 muxPlayer.addEventListener('pause', () => {
-                    dataUsage.isPlaying = false;
+                    stopWatchTimer();
                     updateState('Paused');
                 });
-                muxPlayer.addEventListener('waiting', () => updateState('Buffering'));
+                muxPlayer.addEventListener('waiting', () => {
+                    stopWatchTimer();
+                    updateState('Buffering');
+                });
+                muxPlayer.addEventListener('playing', () => {
+                    startWatchTimer();
+                    updateState('Playing');
+                });
                 muxPlayer.addEventListener('ended', () => {
-                    dataUsage.isPlaying = false;
+                    stopWatchTimer();
                     updateState('Ended');
                 });
                 muxPlayer.addEventListener('error', (e) => {
-                    dataUsage.isPlaying = false;
+                    stopWatchTimer();
                     updateState('Error');
                     console.error('Player error:', e);
+                });
+                muxPlayer.addEventListener('seeking', () => {
+                    stopWatchTimer();
+                });
+                muxPlayer.addEventListener('seeked', () => {
+                    if (!muxPlayer.paused) {
+                        startWatchTimer();
+                    }
                 });
 
                 muxPlayer.addEventListener('loadedmetadata', () => {
                     updateInfo();
-                });
-
-                muxPlayer.addEventListener('timeupdate', () => {
-                    if (dataUsage.isPlaying && muxPlayer.currentTime > dataUsage.lastWatchTime) {
-                        dataUsage.watchTime += muxPlayer.currentTime - dataUsage.lastWatchTime;
-                    }
-                    dataUsage.lastWatchTime = muxPlayer.currentTime;
-                    updateDataUsageDisplay();
                 });
             }
 
