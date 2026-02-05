@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mux Minutes Delivered Calculator</title>
+    <meta name="description" content="Visualize Mux billing in real-time. See exactly how minutes delivered are calculated as you play, seek, and switch quality levels.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9658;</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/@mux/mux-player" defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #fa50b5;
+            --primary-dark: #d93d9a;
+            --background: #0f0f0f;
+            --surface: #1a1a1a;
+            --surface-light: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-color), #ff7eb3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .label-hint {
+            font-weight: normal;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="url"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Collapsible Sections */
+        .collapsible {
+            margin-bottom: 1.5rem;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .collapsible-header:hover {
+            border-color: var(--primary-color);
+        }
+
+        .collapsible-header.active {
+            border-radius: 8px 8px 0 0;
+            border-bottom-color: transparent;
+        }
+
+        .collapsible-icon {
+            transition: transform 0.2s;
+        }
+
+        .collapsible-header.active .collapsible-icon {
+            transform: rotate(90deg);
+        }
+
+        .collapsible-content {
+            display: none;
+            padding: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .collapsible-content.active {
+            display: block;
+        }
+
+        /* Stream Type Selector */
+        .stream-type-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .stream-type-btn {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .stream-type-btn:hover {
+            border-color: var(--primary-color);
+        }
+
+        .stream-type-btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Checkbox Group */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        /* Player Section */
+        .player-section {
+            margin-top: 2rem;
+        }
+
+        .player-wrapper {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .player-wrapper mux-player {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            --media-accent-color: var(--primary-color);
+        }
+
+        .player-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 16 / 9;
+            color: var(--text-secondary);
+            background: var(--surface);
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .player-placeholder-icon {
+            font-size: 3rem;
+            opacity: 0.5;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .quick-btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            background: var(--surface-light);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        /* Player Info */
+        .player-info {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .player-info h3 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .info-value {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        /* Billing Highlight */
+        .education-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .education-intro {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .education-intro strong {
+            color: var(--primary-color);
+        }
+
+        .billing-highlight {
+            background: linear-gradient(135deg, rgba(250, 80, 181, 0.15) 0%, rgba(250, 80, 181, 0.05) 100%);
+            border: 1px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .billing-main {
+            text-align: center;
+            flex-shrink: 0;
+            cursor: help;
+        }
+
+        .billing-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            font-family: 'Monaco', 'Menlo', monospace;
+            line-height: 1;
+        }
+
+        .billing-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+        }
+
+        /* Insight Box */
+        .insight-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .insight-icon {
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .insight-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .insight-text strong {
+            color: var(--text-primary);
+        }
+
+        .insight-text em {
+            color: var(--text-secondary);
+            font-style: normal;
+            opacity: 0.8;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: help;
+        }
+
+        .kpi-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        /* Tooltips */
+        [data-tooltip] {
+            position: relative;
+        }
+
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            width: 220px;
+            text-align: left;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            line-height: 1.4;
+            pointer-events: none;
+        }
+
+        [data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 2px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--border-color);
+            z-index: 101;
+            pointer-events: none;
+        }
+
+        .billing-main[data-tooltip]:hover::after {
+            width: 280px;
+        }
+
+        /* Charts */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 700px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: var(--background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            padding-top: 0.5rem;
+            height: 220px;
+            position: relative;
+        }
+
+        .chart-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: calc(100% - 20px);
+        }
+
+        /* Segment Log */
+        .segment-log-details {
+            margin-top: 1rem;
+        }
+
+        .segment-log-details summary {
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            padding: 0.5rem 0;
+            user-select: none;
+        }
+
+        .segment-log-details summary:hover {
+            color: var(--text-primary);
+        }
+
+        .segment-log-details[open] summary {
+            margin-bottom: 0.5rem;
+        }
+
+        .segment-log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .segment-log-header {
+            display: grid;
+            grid-template-columns: 80px 1fr 80px 80px;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface-light);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+        }
+
+        .segment-log-entry {
+            display: grid;
+            grid-template-columns: 80px 1fr 80px 80px;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .segment-log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .segment-type {
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .segment-type.video {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+        }
+
+        .segment-type.audio {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+
+        .segment-type.init {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .segment-type.cached {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+        }
+
+        .segment-log-entry.cached {
+            opacity: 0.6;
+        }
+
+        .section-divider {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 1.5rem 0;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .billing-highlight {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .billing-value {
+                font-size: 2rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mux Minutes Delivered Calculator</h1>
+            <p class="subtitle">Visualize how Mux billing works in real-time</p>
+        </header>
+
+        <form id="player-form">
+            <div class="form-group">
+                <label for="playback-id">
+                    Playback ID
+                    <span class="label-hint">- The Mux playback ID for the video</span>
+                </label>
+                <input type="text" id="playback-id" placeholder="e.g., EcHgOK9coz5K4rjSwOkoE7Y7O01201YMIC200RI6lNxnhs" required>
+            </div>
+
+            <div class="form-group">
+                <label>Stream Type</label>
+                <div class="stream-type-selector">
+                    <button type="button" class="stream-type-btn active" data-type="on-demand">On-Demand</button>
+                    <button type="button" class="stream-type-btn" data-type="live">Live</button>
+                    <button type="button" class="stream-type-btn" data-type="ll-live">Low-Latency Live</button>
+                </div>
+                <input type="hidden" id="stream-type" value="on-demand">
+            </div>
+
+            <!-- Signed URL Tokens -->
+            <div class="collapsible">
+                <div class="collapsible-header" id="tokens-header">
+                    <span class="collapsible-icon">&#9654;</span>
+                    <span>Signed URL Tokens (Optional)</span>
+                </div>
+                <div class="collapsible-content" id="tokens-content">
+                    <div class="form-group">
+                        <label for="playback-token">
+                            Playback Token
+                            <span class="label-hint">- JWT for video playback access</span>
+                        </label>
+                        <textarea id="playback-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="thumbnail-token">
+                            Thumbnail Token
+                            <span class="label-hint">- JWT for poster image</span>
+                        </label>
+                        <textarea id="thumbnail-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="storyboard-token">
+                            Storyboard Token
+                            <span class="label-hint">- JWT for timeline hover previews</span>
+                        </label>
+                        <textarea id="storyboard-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="drm-token">
+                            DRM Token
+                            <span class="label-hint">- JWT for DRM-protected content</span>
+                        </label>
+                        <textarea id="drm-token" rows="2" placeholder="eyJhbGciOiJSUzI1NiI..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Options -->
+            <div class="collapsible">
+                <div class="collapsible-header" id="options-header">
+                    <span class="collapsible-icon">&#9654;</span>
+                    <span>Player Options</span>
+                </div>
+                <div class="collapsible-content" id="options-content">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="max-resolution">Max Resolution</label>
+                            <select id="max-resolution">
+                                <option value="">Auto</option>
+                                <option value="720p">720p</option>
+                                <option value="1080p">1080p</option>
+                                <option value="1440p">1440p</option>
+                                <option value="2160p">2160p (4K)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="start-time">
+                                Start Time
+                                <span class="label-hint">- In seconds</span>
+                            </label>
+                            <input type="number" id="start-time" placeholder="0" min="0" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Playback Options</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="autoplay">
+                                <label for="autoplay">Autoplay</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="muted">
+                                <label for="muted">Muted</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="loop">
+                                <label for="loop">Loop</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">Load Player</button>
+                <button type="button" class="btn btn-secondary" id="clear-btn">Clear</button>
+            </div>
+        </form>
+
+        <div class="player-section" id="player-section" style="display: none;">
+            <div class="player-wrapper" id="player-wrapper">
+                <div class="player-placeholder" id="player-placeholder">
+                    <div class="player-placeholder-icon">&#9658;</div>
+                    <div>Enter a playback ID and click "Load Player"</div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-btn" id="btn-play">Play</button>
+                <button class="quick-btn" id="btn-pause">Pause</button>
+                <button class="quick-btn" id="btn-mute">Mute</button>
+                <button class="quick-btn" id="btn-unmute">Unmute</button>
+                <button class="quick-btn" id="btn-fullscreen">Fullscreen</button>
+                <button class="quick-btn" id="btn-pip">Picture-in-Picture</button>
+                <button class="quick-btn" id="btn-reload">Reload</button>
+            </div>
+
+            <div class="player-info" id="player-info">
+                <h3>Player Info</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Duration</span>
+                        <span class="info-value" id="info-duration">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Current Time</span>
+                        <span class="info-value" id="info-current-time">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">State</span>
+                        <span class="info-value" id="info-state">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Volume</span>
+                        <span class="info-value" id="info-volume">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Buffered</span>
+                        <span class="info-value" id="info-buffered">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Stream Type</span>
+                        <span class="info-value" id="info-stream-type">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-info">
+                <div class="education-header">
+                    <h3>Delivery & Billing Insights</h3>
+                    <p class="education-intro">Mux bills based on <strong>minutes delivered</strong> - the total duration of video segments sent from the CDN to the player. Watch how this metric changes as you play, seek, and switch quality levels.</p>
+                </div>
+
+                <div class="billing-highlight">
+                    <div class="billing-main" data-tooltip="The primary billing metric. Each video segment delivered from CDN adds its duration to this total. Quality level doesn't affect minutes - a 10-second segment at 1080p costs the same as 10 seconds at 480p.">
+                        <div class="billing-value" id="kpi-minutes-delivered">0:00</div>
+                        <div class="billing-label">Minutes Delivered</div>
+                    </div>
+                </div>
+
+                <div class="insight-box" id="insight-box">
+                    <div class="insight-icon">&#128161;</div>
+                    <div class="insight-text" id="insight-text">Start playback to see delivery insights...</div>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card" data-tooltip="Total bytes downloaded from Mux CDN (video + audio). This shows bandwidth usage but doesn't directly affect billing.">
+                        <div class="kpi-value" id="kpi-total-data">0 KB</div>
+                        <div class="kpi-label">Data Downloaded</div>
+                    </div>
+                    <div class="kpi-card" data-tooltip="Video data only. Higher resolutions use more bandwidth per minute but cost the same in minutes delivered.">
+                        <div class="kpi-value" id="kpi-video-data">0 KB</div>
+                        <div class="kpi-label">Video</div>
+                    </div>
+                    <div class="kpi-card" data-tooltip="Audio is delivered separately. Typically much smaller than video data.">
+                        <div class="kpi-value" id="kpi-audio-data">0 KB</div>
+                        <div class="kpi-label">Audio</div>
+                    </div>
+                    <div class="kpi-card" data-tooltip="Segments served from browser cache don't count toward billing - they were already billed when first downloaded.">
+                        <div class="kpi-value" id="kpi-cached-data">0 KB</div>
+                        <div class="kpi-label">From Cache</div>
+                    </div>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-container">
+                        <div class="chart-title">Bandwidth by Quality</div>
+                        <canvas id="data-chart" class="chart-canvas"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">Minutes by Quality</div>
+                        <canvas id="minutes-chart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+
+                <details class="segment-log-details">
+                    <summary>Segment Download Log</summary>
+                    <div class="segment-log" id="segment-log">
+                        <div class="segment-log-header">
+                            <span>Time</span>
+                            <span>Segment</span>
+                            <span>Size</span>
+                            <span>Type</span>
+                        </div>
+                        <div id="segment-log-entries"></div>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <footer>
+            <p>Built with <a href="https://mux.com" target="_blank">Mux</a> | <a href="https://docs.mux.com/guides/video/track-delivery" target="_blank">Learn about Minutes Delivered</a></p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('player-form');
+            const clearBtn = document.getElementById('clear-btn');
+            const playerSection = document.getElementById('player-section');
+            const playerWrapper = document.getElementById('player-wrapper');
+
+            let muxPlayer = null;
+            let infoInterval = null;
+
+            // Restore playback ID from URL if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const savedPlaybackId = urlParams.get('id');
+            if (savedPlaybackId) {
+                document.getElementById('playback-id').value = savedPlaybackId;
+                const url = new URL(window.location);
+                url.searchParams.delete('id');
+                window.history.replaceState({}, '', url);
+            }
+
+            // Data usage tracking
+            let dataUsage = {
+                totalBytes: 0,
+                videoBytes: 0,
+                audioBytes: 0,
+                cachedBytes: 0,
+                segmentCount: 0,
+                cachedSegmentCount: 0,
+                videoDuration: 0,
+                qualitySwitches: 0,
+                segments: [],
+                byRendition: {},
+                startTime: null,
+                currentLevel: null
+            };
+            let chartCtx = null;
+            let minutesChartCtx = null;
+
+            const renditionColors = [
+                '#fa50b5', '#60a5fa', '#4ade80', '#fbbf24',
+                '#f472b6', '#a78bfa', '#34d399', '#fb923c'
+            ];
+
+            // Stream type selector
+            const streamTypeBtns = document.querySelectorAll('.stream-type-btn');
+            const streamTypeInput = document.getElementById('stream-type');
+
+            streamTypeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    streamTypeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    streamTypeInput.value = btn.dataset.type;
+                });
+            });
+
+            // Collapsible sections
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    header.classList.toggle('active');
+                    content.classList.toggle('active');
+                });
+            });
+
+            // Form submission
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                loadPlayer();
+            });
+
+            // Clear button
+            clearBtn.addEventListener('click', () => {
+                destroyPlayer();
+                form.reset();
+                streamTypeBtns.forEach(b => b.classList.remove('active'));
+                streamTypeBtns[0].classList.add('active');
+                streamTypeInput.value = 'on-demand';
+                playerSection.style.display = 'none';
+            });
+
+            // Quick action buttons
+            document.getElementById('btn-play').addEventListener('click', () => muxPlayer?.play());
+            document.getElementById('btn-pause').addEventListener('click', () => muxPlayer?.pause());
+            document.getElementById('btn-mute').addEventListener('click', () => { if (muxPlayer) muxPlayer.muted = true; });
+            document.getElementById('btn-unmute').addEventListener('click', () => { if (muxPlayer) muxPlayer.muted = false; });
+            document.getElementById('btn-fullscreen').addEventListener('click', () => muxPlayer?.requestFullscreen());
+            document.getElementById('btn-pip').addEventListener('click', () => {
+                if (document.pictureInPictureElement) {
+                    document.exitPictureInPicture();
+                } else {
+                    muxPlayer?.requestPictureInPicture();
+                }
+            });
+            document.getElementById('btn-reload').addEventListener('click', () => loadPlayer());
+
+            function loadPlayer() {
+                destroyPlayer();
+
+                const playbackId = document.getElementById('playback-id').value.trim();
+                if (!playbackId) {
+                    alert('Please enter a playback ID');
+                    return;
+                }
+
+                muxPlayer = document.createElement('mux-player');
+                muxPlayer.setAttribute('playback-id', playbackId);
+
+                const streamType = document.getElementById('stream-type').value;
+                if (streamType !== 'on-demand') {
+                    muxPlayer.setAttribute('stream-type', streamType);
+                }
+
+                // Tokens
+                const playbackToken = document.getElementById('playback-token').value.trim();
+                const thumbnailToken = document.getElementById('thumbnail-token').value.trim();
+                const storyboardToken = document.getElementById('storyboard-token').value.trim();
+                const drmToken = document.getElementById('drm-token').value.trim();
+
+                if (playbackToken) muxPlayer.setAttribute('playback-token', playbackToken);
+                if (thumbnailToken) muxPlayer.setAttribute('thumbnail-token', thumbnailToken);
+                if (storyboardToken) muxPlayer.setAttribute('storyboard-token', storyboardToken);
+                if (drmToken) muxPlayer.setAttribute('drm-token', drmToken);
+
+                // Options
+                muxPlayer.style.setProperty('--media-accent-color', '#fa50b5');
+
+                const startTime = document.getElementById('start-time').value;
+                if (startTime) muxPlayer.setAttribute('start-time', startTime);
+
+                const maxResolution = document.getElementById('max-resolution').value;
+                if (maxResolution) muxPlayer.setAttribute('max-resolution', maxResolution);
+
+                if (document.getElementById('autoplay').checked) muxPlayer.setAttribute('autoplay', '');
+                if (document.getElementById('muted').checked) muxPlayer.setAttribute('muted', '');
+                if (document.getElementById('loop').checked) muxPlayer.setAttribute('loop', '');
+
+                playerWrapper.innerHTML = '';
+                playerWrapper.appendChild(muxPlayer);
+                playerSection.style.display = 'block';
+
+                setupPlayerEvents();
+                setupDataTracking();
+                startInfoUpdates();
+            }
+
+            function resetDataUsage() {
+                dataUsage = {
+                    totalBytes: 0,
+                    videoBytes: 0,
+                    audioBytes: 0,
+                    cachedBytes: 0,
+                    segmentCount: 0,
+                    cachedSegmentCount: 0,
+                    videoDuration: 0,
+                    qualitySwitches: 0,
+                    segments: [],
+                    byRendition: {},
+                    startTime: Date.now(),
+                    currentLevel: null
+                };
+                document.getElementById('segment-log-entries').innerHTML = '';
+                updateDataUsageDisplay();
+                updateInsight();
+                drawCharts();
+            }
+
+            function setupDataTracking() {
+                if (!muxPlayer) return;
+                resetDataUsage();
+
+                const checkHls = () => {
+                    const hls = muxPlayer._hls;
+                    if (hls) {
+                        const Hls = hls.constructor;
+                        const fragLoadedEvent = Hls.Events?.FRAG_LOADED || 'hlsFragLoaded';
+                        hls.on(fragLoadedEvent, (event, data) => {
+                            onFragmentLoaded(data);
+                        });
+                        console.log('HLS data tracking enabled');
+                    } else {
+                        setTimeout(checkHls, 100);
+                    }
+                };
+                setTimeout(checkHls, 100);
+            }
+
+            function onFragmentLoaded(data) {
+                const frag = data.frag;
+                const stats = data.stats || frag.stats;
+
+                let size = 0;
+                if (stats && stats.total) {
+                    size = stats.total;
+                } else if (stats && stats.loaded) {
+                    size = stats.loaded;
+                } else if (data.payload) {
+                    size = data.payload.byteLength;
+                }
+
+                let isCached = false;
+                if (stats && stats.loading) {
+                    const loadTime = stats.loading.end - stats.loading.start;
+                    isCached = loadTime < 50 && size > 10000;
+                }
+
+                let type = 'video';
+                if (frag.type === 'audio') {
+                    type = 'audio';
+                } else if (frag.type === 'main' && frag.sn === 'initSegment') {
+                    type = 'init';
+                } else if (frag.sn === 'initSegment') {
+                    type = 'init';
+                }
+
+                if (type === 'video' && !isCached) {
+                    if (dataUsage.currentLevel !== null && dataUsage.currentLevel !== frag.level) {
+                        dataUsage.qualitySwitches++;
+                    }
+                    dataUsage.currentLevel = frag.level;
+                }
+
+                const segmentName = frag.sn === 'initSegment'
+                    ? `init-${frag.level}`
+                    : `seg-${frag.sn}-lvl${frag.level}`;
+
+                const now = Date.now();
+                const elapsedSec = (now - dataUsage.startTime) / 1000;
+
+                if (isCached) {
+                    dataUsage.cachedBytes += size;
+                    dataUsage.cachedSegmentCount++;
+                } else {
+                    dataUsage.totalBytes += size;
+                    dataUsage.segmentCount++;
+
+                    if (type === 'audio') {
+                        dataUsage.audioBytes += size;
+                    } else {
+                        dataUsage.videoBytes += size;
+
+                        const segmentDuration = frag.duration || 0;
+                        if (type === 'video' && segmentDuration > 0) {
+                            dataUsage.videoDuration += segmentDuration;
+                        }
+
+                        const level = frag.level;
+                        if (!dataUsage.byRendition[level]) {
+                            let resolution = `Level ${level}`;
+                            const hls = muxPlayer?._hls;
+                            if (hls && hls.levels && hls.levels[level]) {
+                                const lvl = hls.levels[level];
+                                if (lvl.height) {
+                                    resolution = `${lvl.height}p`;
+                                } else if (lvl.width) {
+                                    resolution = `${lvl.width}w`;
+                                }
+                            }
+                            dataUsage.byRendition[level] = {
+                                bytes: 0,
+                                segments: 0,
+                                resolution: resolution,
+                                duration: 0
+                            };
+                        }
+                        if (type === 'video' && segmentDuration > 0) {
+                            dataUsage.byRendition[level].duration += segmentDuration;
+                        }
+                        dataUsage.byRendition[level].bytes += size;
+                        dataUsage.byRendition[level].segments++;
+                    }
+                }
+
+                const segment = {
+                    time: elapsedSec,
+                    name: segmentName,
+                    size: size,
+                    type: type,
+                    level: frag.level,
+                    sn: frag.sn,
+                    duration: frag.duration || 0,
+                    cached: isCached
+                };
+                dataUsage.segments.push(segment);
+
+                addSegmentLogEntry(segment);
+                updateDataUsageDisplay();
+                updateInsight();
+                drawCharts();
+            }
+
+            function addSegmentLogEntry(segment) {
+                const entries = document.getElementById('segment-log-entries');
+                const entry = document.createElement('div');
+                entry.className = 'segment-log-entry' + (segment.cached ? ' cached' : '');
+
+                const typeLabel = segment.cached ? 'cached' : segment.type;
+                const typeClass = segment.cached ? 'cached' : segment.type;
+
+                entry.innerHTML = `
+                    <span>${segment.time.toFixed(1)}s</span>
+                    <span>${segment.name}</span>
+                    <span>${formatBytes(segment.size)}</span>
+                    <span><span class="segment-type ${typeClass}">${typeLabel}</span></span>
+                `;
+                entries.insertBefore(entry, entries.firstChild);
+
+                while (entries.children.length > 50) {
+                    entries.removeChild(entries.lastChild);
+                }
+            }
+
+            function updateDataUsageDisplay() {
+                document.getElementById('kpi-minutes-delivered').textContent = formatDuration(dataUsage.videoDuration);
+                document.getElementById('kpi-total-data').textContent = formatBytes(dataUsage.totalBytes);
+                document.getElementById('kpi-video-data').textContent = formatBytes(dataUsage.videoBytes);
+                document.getElementById('kpi-audio-data').textContent = formatBytes(dataUsage.audioBytes);
+                document.getElementById('kpi-cached-data').textContent = formatBytes(dataUsage.cachedBytes);
+            }
+
+            function formatDuration(seconds) {
+                if (!seconds || seconds === 0) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            function updateInsight() {
+                const insightEl = document.getElementById('insight-text');
+                if (!insightEl) return;
+
+                const delivered = dataUsage.videoDuration;
+                const renditions = Object.values(dataUsage.byRendition);
+                const switches = dataUsage.qualitySwitches;
+
+                let insight = '';
+
+                if (delivered === 0) {
+                    insight = 'Start playback to see delivery insights. Try switching quality levels or seeking to see how it affects minutes delivered.';
+                } else if (switches > 0 && renditions.length > 1) {
+                    const sorted = renditions.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+                    const topRendition = sorted[0];
+                    insight = `<strong>Quality switching detected:</strong> ${formatDuration(delivered)} delivered across ${renditions.length} quality levels. Most time (${formatDuration(topRendition.duration)}) at <strong>${topRendition.resolution}</strong>. Quality changes can cause segments to be re-downloaded at the new bitrate.`;
+                } else if (renditions.length > 1) {
+                    const sorted = renditions.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+                    const topRendition = sorted[0];
+                    insight = `<strong>Adaptive streaming in action:</strong> Most playback (${formatDuration(topRendition.duration)}) was at <strong>${topRendition.resolution}</strong>. The player automatically selects quality based on your connection speed. All quality levels cost the same per minute delivered.`;
+                } else if (renditions.length === 1) {
+                    const rendition = renditions[0];
+                    insight = `<strong>Single quality playback:</strong> All ${formatDuration(delivered)} delivered at <strong>${rendition.resolution}</strong>. The player chose this quality based on your connection. Try a slower network to see quality adaptation.`;
+                } else {
+                    insight = `<strong>${formatDuration(delivered)} minutes delivered</strong> so far. Each segment the player downloads adds to this total, regardless of video quality.`;
+                }
+
+                if (dataUsage.cachedBytes > 0) {
+                    const cachedPercent = ((dataUsage.cachedBytes / (dataUsage.totalBytes + dataUsage.cachedBytes)) * 100).toFixed(0);
+                    insight += ` <em>${cachedPercent}% of requested data came from browser cache (not billed again).</em>`;
+                }
+
+                insightEl.innerHTML = insight;
+            }
+
+            function drawCharts() {
+                const renditions = Object.entries(dataUsage.byRendition)
+                    .map(([level, data]) => ({
+                        level: parseInt(level),
+                        ...data
+                    }))
+                    .sort((a, b) => {
+                        const resA = parseInt(a.resolution) || 0;
+                        const resB = parseInt(b.resolution) || 0;
+                        return resB - resA;
+                    });
+
+                drawDataChart(renditions);
+                drawMinutesChart(renditions);
+            }
+
+            function drawDataChart(renditions) {
+                const canvas = document.getElementById('data-chart');
+                if (!canvas) return;
+
+                if (!chartCtx) {
+                    chartCtx = canvas.getContext('2d');
+                }
+
+                const ctx = chartCtx;
+                const dpr = window.devicePixelRatio || 1;
+                const drawWidth = canvas.offsetWidth;
+                const drawHeight = canvas.offsetHeight;
+
+                canvas.width = drawWidth * dpr;
+                canvas.height = drawHeight * dpr;
+                ctx.scale(dpr, dpr);
+
+                ctx.clearRect(0, 0, drawWidth, drawHeight);
+
+                if (renditions.length === 0) {
+                    ctx.fillStyle = '#a0a0a0';
+                    ctx.font = '12px system-ui';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Waiting for video data...', drawWidth / 2, drawHeight / 2);
+                    return;
+                }
+
+                const totalVideoBytes = renditions.reduce((sum, r) => sum + r.bytes, 0);
+
+                const centerX = drawWidth * 0.35;
+                const centerY = drawHeight / 2;
+                const radius = Math.min(drawWidth * 0.3, drawHeight * 0.4);
+
+                let startAngle = -Math.PI / 2;
+
+                renditions.forEach((rendition, index) => {
+                    const sliceAngle = (rendition.bytes / totalVideoBytes) * Math.PI * 2;
+                    const endAngle = startAngle + sliceAngle;
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = renditionColors[index % renditionColors.length];
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#1a1a1a';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    startAngle = endAngle;
+                });
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(formatBytes(totalVideoBytes), centerX, centerY - 8);
+                ctx.fillStyle = '#a0a0a0';
+                ctx.font = '10px system-ui';
+                ctx.fillText('Video Total', centerX, centerY + 10);
+
+                const legendX = drawWidth * 0.55;
+                let legendY = 20;
+                const legendSpacing = 28;
+
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+
+                renditions.forEach((rendition, index) => {
+                    const percent = ((rendition.bytes / totalVideoBytes) * 100).toFixed(1);
+
+                    ctx.fillStyle = renditionColors[index % renditionColors.length];
+                    ctx.fillRect(legendX, legendY - 6, 12, 12);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 12px system-ui';
+                    ctx.fillText(rendition.resolution, legendX + 18, legendY);
+
+                    ctx.fillStyle = '#a0a0a0';
+                    ctx.font = '11px system-ui';
+                    ctx.fillText(`${formatBytes(rendition.bytes)} (${percent}%)`, legendX + 18, legendY + 14);
+
+                    legendY += legendSpacing;
+                });
+            }
+
+            function drawMinutesChart(renditions) {
+                const canvas = document.getElementById('minutes-chart');
+                if (!canvas) return;
+
+                if (!minutesChartCtx) {
+                    minutesChartCtx = canvas.getContext('2d');
+                }
+
+                const ctx = minutesChartCtx;
+                const dpr = window.devicePixelRatio || 1;
+                const drawWidth = canvas.offsetWidth;
+                const drawHeight = canvas.offsetHeight;
+
+                canvas.width = drawWidth * dpr;
+                canvas.height = drawHeight * dpr;
+                ctx.scale(dpr, dpr);
+
+                ctx.clearRect(0, 0, drawWidth, drawHeight);
+
+                if (renditions.length === 0) {
+                    ctx.fillStyle = '#a0a0a0';
+                    ctx.font = '12px system-ui';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Waiting for video data...', drawWidth / 2, drawHeight / 2);
+                    return;
+                }
+
+                const totalDuration = renditions.reduce((sum, r) => sum + (r.duration || 0), 0);
+
+                if (totalDuration === 0) {
+                    ctx.fillStyle = '#a0a0a0';
+                    ctx.font = '12px system-ui';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Waiting for video data...', drawWidth / 2, drawHeight / 2);
+                    return;
+                }
+
+                const centerX = drawWidth * 0.35;
+                const centerY = drawHeight / 2;
+                const radius = Math.min(drawWidth * 0.3, drawHeight * 0.4);
+
+                let startAngle = -Math.PI / 2;
+
+                renditions.forEach((rendition, index) => {
+                    const duration = rendition.duration || 0;
+                    if (duration === 0) return;
+
+                    const sliceAngle = (duration / totalDuration) * Math.PI * 2;
+                    const endAngle = startAngle + sliceAngle;
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = renditionColors[index % renditionColors.length];
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#1a1a1a';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    startAngle = endAngle;
+                });
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(formatDuration(totalDuration), centerX, centerY - 8);
+                ctx.fillStyle = '#a0a0a0';
+                ctx.font = '10px system-ui';
+                ctx.fillText('Total Minutes', centerX, centerY + 10);
+
+                const legendX = drawWidth * 0.55;
+                let legendY = 20;
+                const legendSpacing = 28;
+
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+
+                renditions.forEach((rendition, index) => {
+                    const duration = rendition.duration || 0;
+                    if (duration === 0) return;
+
+                    const percent = ((duration / totalDuration) * 100).toFixed(1);
+
+                    ctx.fillStyle = renditionColors[index % renditionColors.length];
+                    ctx.fillRect(legendX, legendY - 6, 12, 12);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 12px system-ui';
+                    ctx.fillText(rendition.resolution, legendX + 18, legendY);
+
+                    ctx.fillStyle = '#a0a0a0';
+                    ctx.font = '11px system-ui';
+                    ctx.fillText(`${formatDuration(duration)} (${percent}%)`, legendX + 18, legendY + 14);
+
+                    legendY += legendSpacing;
+                });
+            }
+
+            function destroyPlayer() {
+                if (infoInterval) {
+                    clearInterval(infoInterval);
+                    infoInterval = null;
+                }
+
+                if (muxPlayer) {
+                    const hls = muxPlayer._hls;
+                    if (hls) {
+                        hls.off('hlsFragLoaded');
+                    }
+                    muxPlayer.remove();
+                    muxPlayer = null;
+                }
+
+                chartCtx = null;
+                minutesChartCtx = null;
+            }
+
+            function setupPlayerEvents() {
+                if (!muxPlayer) return;
+
+                muxPlayer.addEventListener('play', () => updateState('Playing'));
+                muxPlayer.addEventListener('pause', () => updateState('Paused'));
+                muxPlayer.addEventListener('waiting', () => updateState('Buffering'));
+                muxPlayer.addEventListener('ended', () => updateState('Ended'));
+                muxPlayer.addEventListener('error', (e) => {
+                    updateState('Error');
+                    console.error('Player error:', e);
+                });
+
+                muxPlayer.addEventListener('loadedmetadata', () => {
+                    updateInfo();
+                });
+            }
+
+            function startInfoUpdates() {
+                updateInfo();
+                infoInterval = setInterval(updateInfo, 500);
+            }
+
+            function updateInfo() {
+                if (!muxPlayer) return;
+
+                const duration = muxPlayer.duration;
+                document.getElementById('info-duration').textContent =
+                    isFinite(duration) ? formatTime(duration) : '-';
+
+                const currentTime = muxPlayer.currentTime;
+                document.getElementById('info-current-time').textContent =
+                    isFinite(currentTime) ? formatTime(currentTime) : '-';
+
+                const volume = muxPlayer.volume;
+                const muted = muxPlayer.muted;
+                document.getElementById('info-volume').textContent =
+                    muted ? 'Muted' : `${Math.round(volume * 100)}%`;
+
+                const buffered = muxPlayer.buffered;
+                if (buffered && buffered.length > 0) {
+                    const bufferedEnd = buffered.end(buffered.length - 1);
+                    const bufferedPercent = duration ? Math.round((bufferedEnd / duration) * 100) : 0;
+                    document.getElementById('info-buffered').textContent = `${bufferedPercent}%`;
+                } else {
+                    document.getElementById('info-buffered').textContent = '0%';
+                }
+
+                const streamType = document.getElementById('stream-type').value;
+                document.getElementById('info-stream-type').textContent = streamType;
+            }
+
+            function updateState(state) {
+                document.getElementById('info-state').textContent = state;
+            }
+
+            function formatTime(seconds) {
+                if (!isFinite(seconds)) return '-';
+
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = Math.floor(seconds % 60);
+
+                if (h > 0) {
+                    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                }
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            }
+
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+                return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+            }
+        });
+    </script>
+</body>
+</html>
