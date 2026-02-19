@@ -159,6 +159,43 @@
             }
         }
 
+        /* Buffer Config */
+        .buffer-config {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .buffer-config-header {
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .buffer-config-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .buffer-config-fields .form-group {
+            margin-bottom: 0;
+        }
+
+        .buffer-hint {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 700px) {
+            .buffer-config-fields {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Player Section */
         .player-section {
             margin-top: 2rem;
@@ -592,6 +629,37 @@
                 <input type="text" id="playback-id" placeholder="e.g., VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" value="VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" required>
             </div>
 
+            <div class="buffer-config">
+                <div class="buffer-config-header">
+                    <span>Buffer Configuration</span>
+                    <span class="label-hint">— controls how much video is downloaded ahead of playback</span>
+                </div>
+                <div class="buffer-config-fields">
+                    <div class="form-group">
+                        <label for="max-buffer-length">
+                            maxBufferLength
+                            <span class="label-hint">— max forward buffer in seconds</span>
+                        </label>
+                        <input type="number" id="max-buffer-length" placeholder="30" min="1" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="max-buffer-size">
+                            maxBufferSize
+                            <span class="label-hint">— min buffer size in MB</span>
+                        </label>
+                        <input type="number" id="max-buffer-size" placeholder="60" min="1" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="max-max-buffer-length">
+                            maxMaxBufferLength
+                            <span class="label-hint">— hard cap in seconds</span>
+                        </label>
+                        <input type="number" id="max-max-buffer-length" placeholder="600" min="1" step="1">
+                    </div>
+                </div>
+                <p class="buffer-hint">Reducing the buffer length means fewer segments are downloaded ahead of time, which lowers minutes delivered. The tradeoff is a higher risk of rebuffering on slow networks.</p>
+            </div>
+
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary">Load Player</button>
                 <button type="button" class="btn btn-secondary" id="clear-btn">Clear</button>
@@ -812,12 +880,20 @@
                 const checkHls = () => {
                     const hls = muxPlayer._hls;
                     if (hls) {
+                        // Apply buffer config
+                        const maxBufferLength = document.getElementById('max-buffer-length').value;
+                        const maxBufferSize = document.getElementById('max-buffer-size').value;
+                        const maxMaxBufferLength = document.getElementById('max-max-buffer-length').value;
+
+                        if (maxBufferLength) hls.config.maxBufferLength = parseFloat(maxBufferLength);
+                        if (maxBufferSize) hls.config.maxBufferSize = parseFloat(maxBufferSize) * 1024 * 1024;
+                        if (maxMaxBufferLength) hls.config.maxMaxBufferLength = parseFloat(maxMaxBufferLength);
+
                         const Hls = hls.constructor;
                         const fragLoadedEvent = Hls.Events?.FRAG_LOADED || 'hlsFragLoaded';
                         hls.on(fragLoadedEvent, (event, data) => {
                             onFragmentLoaded(data);
                         });
-                        console.log('HLS data tracking enabled');
                     } else {
                         setTimeout(checkHls, 100);
                     }
