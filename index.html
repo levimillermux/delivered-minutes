@@ -885,10 +885,10 @@
                     <div class="form-group" style="margin-bottom: calc(var(--unit) * 1);">
                         <label for="buffer-preset">Preset</label>
                         <select id="buffer-preset">
-                            <option value="default">Default — use hls.js built-in settings</option>
-                            <option value="performance">Performance optimised — maximum buffer for smooth playback</option>
-                            <option value="balanced">Balanced — moderate buffer, reduced delivery cost</option>
-                            <option value="cost">Cost optimised — minimal buffer to minimise minutes delivered</option>
+                            <option value="default">Default</option>
+                            <option value="performance">Performance optimised</option>
+                            <option value="balanced">Balanced</option>
+                            <option value="cost">Cost optimised</option>
                         </select>
                     </div>
                     <p class="buffer-preset-description" id="buffer-preset-description"></p>
@@ -1084,7 +1084,7 @@
             const bufferPresets = {
                 default: {
                     maxBufferLength: null, maxBufferSize: null, maxMaxBufferLength: null,
-                    description: 'Uses hls.js built-in defaults — no overrides applied. The player manages the buffer automatically.',
+                    description: 'No overrides applied. The player manages the buffer automatically.',
                     label: 'Default'
                 },
                 performance: {
