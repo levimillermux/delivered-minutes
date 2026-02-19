@@ -6,196 +6,317 @@
     <title>Mux Minutes Delivered Calculator</title>
     <meta name="description" content="Visualize Mux billing in real-time. See exactly how minutes delivered are calculated as you play, seek, and switch quality levels.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9658;</text></svg>">
+    <!-- Aeonik & JetBrains Mono from Google Fonts (closest available match for Aeonik via Inter; JetBrains Mono is available) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@mux/mux-player" defer></script>
     <style>
+        /* ─── Mux Brand System ─────────────────────────────────────────────── */
+        :root {
+            /* Core brand colors */
+            --pink:       #FA50B5;
+            --yellow:     #FFB200;
+            --green:      #00AA3C;
+            --orange:     #FF6100;
+            --red:        #EA3737;
+            --blue:       #0072E3;
+
+            /* Grays */
+            --black:      #000000;
+            --charcoal:   #242628;
+            --dark-gray:  #565E67;
+            --gray:       #828C97;
+            --putty:      #E2E4DD;
+            --white:      #FFFFFF;
+
+            /* Page tokens */
+            --bg:         var(--black);
+            --surface:    var(--charcoal);
+            --surface-2:  #2e3133;
+            --border:     #333639;
+            --text:       var(--white);
+            --text-muted: var(--gray);
+            --accent:     var(--pink);
+            --accent-alt: var(--yellow);
+
+            /* Grid unit (macroblock-inspired 8px base) */
+            --unit: 8px;
+
+            /* Typography */
+            --font-sans: 'Aeonik', 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Monaco', 'Menlo', monospace;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        :root {
-            --primary-color: #fa50b5;
-            --primary-dark: #d93d9a;
-            --background: #0f0f0f;
-            --surface: #1a1a1a;
-            --surface-light: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --border-color: #333;
-        }
+        /* ─── Aeonik fallback via @font-face (loaded from CDN if available) ── */
+        /* We load Aeonik from the Mux CDN if it serves it; otherwise fall back to Inter */
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background-color: var(--background);
-            color: var(--text-primary);
+            font-family: var(--font-sans);
+            background-color: var(--bg);
+            color: var(--text);
             min-height: 100vh;
             line-height: 1.6;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
         }
 
+        /* ─── Macroblock grid background ────────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 32px 32px; /* 4 × 8px units = macroblock-inspired */
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── Layout ─────────────────────────────────────────────────────────── */
         .container {
-            max-width: 900px;
+            position: relative;
+            z-index: 1;
+            max-width: 960px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: calc(var(--unit) * 4) calc(var(--unit) * 3);
         }
 
+        /* ─── Header ─────────────────────────────────────────────────────────── */
         header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: calc(var(--unit) * 3);
+            margin-bottom: calc(var(--unit) * 6);
+            padding-bottom: calc(var(--unit) * 4);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .header-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: calc(var(--unit) * 1);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--pink);
+            margin-bottom: calc(var(--unit) * 2);
+        }
+
+        .header-eyebrow::before {
+            content: '';
+            display: block;
+            width: 16px;
+            height: 2px;
+            background: var(--pink);
+            flex-shrink: 0;
         }
 
         header h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--primary-color), #ff7eb3);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-family: var(--font-sans);
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: var(--white);
+            margin-bottom: calc(var(--unit) * 1.5);
+        }
+
+        header h1 span {
+            color: var(--pink);
         }
 
         .subtitle {
-            color: var(--text-secondary);
-            font-size: 1rem;
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+            max-width: 520px;
+            line-height: 1.6;
         }
 
-        /* Form Elements */
+        /* Mux wordmark (text-based since we don't have the SVG) */
+        .mux-logo {
+            font-family: var(--font-sans);
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--white);
+            flex-shrink: 0;
+            line-height: 1;
+            padding-top: 4px;
+        }
+
+        /* ─── Section labels ─────────────────────────────────────────────────── */
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: calc(var(--unit) * 1.5);
+        }
+
+        /* ─── Cards / Surfaces ───────────────────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: calc(var(--unit) * 3);
+            margin-bottom: calc(var(--unit) * 3);
+        }
+
+        /* ─── Form Elements ──────────────────────────────────────────────────── */
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: calc(var(--unit) * 2.5);
         }
 
         label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: calc(var(--unit) * 1);
+            font-size: 0.875rem;
             font-weight: 500;
-            color: var(--text-primary);
+            color: var(--white);
         }
 
         .label-hint {
-            font-weight: normal;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            font-size: 0.8125rem;
         }
 
         input[type="text"],
         input[type="number"],
-        input[type="url"],
-        textarea,
         select {
             width: 100%;
-            padding: 0.75rem 1rem;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
+            padding: calc(var(--unit) * 1.5) calc(var(--unit) * 2);
+            background: var(--black);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-family: 'Monaco', 'Menlo', monospace;
-            transition: border-color 0.2s;
+            color: var(--white);
+            font-size: 0.9375rem;
+            font-family: var(--font-mono);
+            transition: border-color 0.15s, box-shadow 0.15s;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
         }
 
         input:focus,
-        textarea:focus,
         select:focus {
-            outline: none;
-            border-color: var(--primary-color);
+            border-color: var(--pink);
+            box-shadow: 0 0 0 3px rgba(250, 80, 181, 0.15);
         }
 
-        textarea {
-            min-height: 80px;
-            resize: vertical;
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23828C97' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: calc(var(--unit) * 5);
+            cursor: pointer;
         }
 
-        /* Buttons */
+        /* ─── Buttons ────────────────────────────────────────────────────────── */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
+            gap: calc(var(--unit) * 1);
+            padding: calc(var(--unit) * 1.5) calc(var(--unit) * 3);
             border: none;
             border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
+            font-size: 0.9375rem;
+            font-family: var(--font-sans);
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
+            letter-spacing: -0.01em;
         }
 
         .btn-primary {
-            background: var(--primary-color);
-            color: white;
+            background: var(--pink);
+            color: var(--white);
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
+            background: #e03da3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(250, 80, 181, 0.35);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
         .btn-secondary {
-            background: var(--surface-light);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: var(--surface);
-            border-color: var(--text-secondary);
+            border-color: var(--text-muted);
+            color: var(--white);
         }
 
         .btn-group {
             display: flex;
-            gap: 0.75rem;
+            gap: calc(var(--unit) * 1.5);
             flex-wrap: wrap;
         }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        @media (max-width: 600px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Buffer Config */
-        .buffer-config {
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
+        /* ─── Buffer Config ───────────────────────────────────────────────────── */
         .buffer-config-header {
-            font-weight: 500;
-            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: calc(var(--unit) * 2);
+        }
+
+        .buffer-config-header .label-hint {
+            font-weight: 400;
         }
 
         .buffer-config-fields {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 1rem;
+            gap: calc(var(--unit) * 2);
         }
 
         .buffer-config-fields .form-group {
             margin-bottom: 0;
         }
 
-        .buffer-hint {
-            margin-top: 1rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
+        .buffer-preset-description {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+            margin-bottom: calc(var(--unit) * 2);
+            min-height: 1.2em;
+            padding: calc(var(--unit) * 1.5) calc(var(--unit) * 2);
+            background: rgba(255,255,255,0.04);
+            border-left: 3px solid var(--pink);
+            border-radius: 0 6px 6px 0;
         }
 
-        .buffer-preset-description {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 1rem;
-            min-height: 1.2em;
+        .buffer-hint {
+            margin-top: calc(var(--unit) * 2);
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            line-height: 1.55;
         }
 
         @media (max-width: 700px) {
@@ -204,204 +325,212 @@
             }
         }
 
-        /* Player Section */
+        /* ─── Player ─────────────────────────────────────────────────────────── */
         .player-section {
-            margin-top: 2rem;
+            margin-top: calc(var(--unit) * 4);
         }
 
         .player-wrapper {
-            background: var(--surface);
-            border: 1px solid var(--border-color);
+            background: var(--charcoal);
+            border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 1.5rem;
+            margin-bottom: calc(var(--unit) * 3);
         }
 
         .player-wrapper mux-player {
             display: block;
             width: 100%;
             aspect-ratio: 16 / 9;
-            --media-accent-color: var(--primary-color);
+            --media-accent-color: var(--pink);
         }
 
-        .player-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            aspect-ratio: 16 / 9;
-            color: var(--text-secondary);
-            background: var(--surface);
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .player-placeholder-icon {
-            font-size: 3rem;
-            opacity: 0.5;
-        }
-
-        /* Player Info */
-        .player-info {
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-
-        .player-info h3 {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
+        /* ─── Player Info Grid ───────────────────────────────────────────────── */
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 0.75rem;
+            gap: calc(var(--unit) * 1.5);
         }
 
         .info-item {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: 4px;
         }
 
         .info-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+            font-size: 0.6875rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
         .info-value {
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 0.85rem;
-            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--white);
         }
 
-        /* Billing Highlight */
-        .education-header {
-            margin-bottom: 1.5rem;
+        /* ─── Delivery Billing ───────────────────────────────────────────────── */
+        .delivery-section h3 {
+            font-size: 1.0625rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: calc(var(--unit) * 1);
         }
 
-        .education-intro {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin: 0;
+        .delivery-intro {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: calc(var(--unit) * 3);
         }
 
-        .education-intro strong {
-            color: var(--primary-color);
+        .delivery-intro strong {
+            color: var(--white);
+            font-weight: 600;
         }
 
+        /* ─── Big Numbers (Watch Time vs Minutes Delivered) ──────────────────── */
         .billing-highlight {
-            background: linear-gradient(135deg, rgba(250, 80, 181, 0.15) 0%, rgba(250, 80, 181, 0.05) 100%);
-            border: 1px solid var(--primary-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            justify-content: center;
-            gap: 2rem;
+            gap: calc(var(--unit) * 3);
+            background: var(--black);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: calc(var(--unit) * 4) calc(var(--unit) * 3);
+            margin-bottom: calc(var(--unit) * 2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Pink accent line at top */
+        .billing-highlight::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--pink), var(--yellow));
         }
 
         .billing-main {
             text-align: center;
-            flex-shrink: 0;
             cursor: help;
         }
 
-        .billing-vs {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
         .billing-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            font-family: 'Monaco', 'Menlo', monospace;
+            font-family: var(--font-mono);
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 600;
+            color: var(--pink);
             line-height: 1;
+            margin-bottom: calc(var(--unit) * 1);
+            letter-spacing: -0.02em;
         }
 
         .billing-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 0.5rem;
+            letter-spacing: 0.1em;
         }
 
-        /* Insight Box */
+        .billing-vs {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--dark-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-align: center;
+        }
+
+        /* ─── Insight Box ────────────────────────────────────────────────────── */
         .insight-box {
             display: flex;
             align-items: flex-start;
-            gap: 0.75rem;
-            padding: 1rem;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
+            gap: calc(var(--unit) * 1.5);
+            padding: calc(var(--unit) * 2);
+            background: rgba(255, 178, 0, 0.06);
+            border: 1px solid rgba(255, 178, 0, 0.2);
             border-radius: 8px;
-            margin-bottom: 1rem;
+            margin-bottom: calc(var(--unit) * 2);
         }
 
         .insight-icon {
-            font-size: 1.25rem;
-            line-height: 1;
+            font-size: 1.125rem;
+            line-height: 1.4;
+            flex-shrink: 0;
         }
 
         .insight-text {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.5;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            line-height: 1.6;
         }
 
         .insight-text strong {
-            color: var(--text-primary);
+            color: var(--white);
+            font-weight: 600;
         }
 
         .insight-text em {
-            color: var(--text-secondary);
+            color: var(--text-muted);
             font-style: normal;
             opacity: 0.8;
         }
 
-        /* KPI Grid */
+        /* ─── KPI Cards ──────────────────────────────────────────────────────── */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
+            grid-template-columns: repeat(4, 1fr);
+            gap: calc(var(--unit) * 1.5);
+            margin-bottom: calc(var(--unit) * 2);
+        }
+
+        @media (max-width: 700px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .kpi-card {
-            background: var(--surface);
-            border: 1px solid var(--border-color);
+            background: var(--black);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 1rem;
+            padding: calc(var(--unit) * 2) calc(var(--unit) * 1.5);
             text-align: center;
             cursor: help;
+            transition: border-color 0.15s;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--dark-gray);
         }
 
         .kpi-value {
-            font-size: 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 1.0625rem;
             font-weight: 600;
-            color: var(--primary-color);
-            font-family: 'Monaco', 'Menlo', monospace;
+            color: var(--yellow);
+            line-height: 1;
+            margin-bottom: 4px;
         }
 
         .kpi-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.625rem;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 0.25rem;
+            letter-spacing: 0.1em;
         }
 
-        /* Tooltips */
+        /* ─── Tooltips ───────────────────────────────────────────────────────── */
         [data-tooltip] {
             position: relative;
         }
@@ -412,17 +541,18 @@
             bottom: calc(100% + 8px);
             left: 50%;
             transform: translateX(-50%);
-            background: #2a2a2a;
-            border: 1px solid var(--border-color);
+            background: var(--charcoal);
+            border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 0.75rem;
+            padding: calc(var(--unit) * 1.5);
             font-size: 0.75rem;
-            color: var(--text-secondary);
+            font-family: var(--font-sans);
+            color: var(--text-muted);
             width: 220px;
             text-align: left;
             z-index: 100;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            line-height: 1.4;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            line-height: 1.5;
             pointer-events: none;
         }
 
@@ -433,7 +563,7 @@
             left: 50%;
             transform: translateX(-50%);
             border: 6px solid transparent;
-            border-top-color: var(--border-color);
+            border-top-color: var(--border);
             z-index: 101;
             pointer-events: none;
         }
@@ -442,11 +572,11 @@
             width: 280px;
         }
 
-        /* Charts */
+        /* ─── Charts ─────────────────────────────────────────────────────────── */
         .charts-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            gap: calc(var(--unit) * 2);
         }
 
         @media (max-width: 700px) {
@@ -456,80 +586,97 @@
         }
 
         .chart-container {
-            background: var(--background);
-            border: 1px solid var(--border-color);
+            background: var(--black);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 1rem;
-            padding-top: 0.5rem;
+            padding: calc(var(--unit) * 2);
+            padding-top: calc(var(--unit) * 1.5);
             height: 220px;
             position: relative;
         }
 
         .chart-title {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+            margin-bottom: calc(var(--unit) * 1);
             text-align: center;
         }
 
         .chart-canvas {
             width: 100%;
-            height: calc(100% - 20px);
+            height: calc(100% - 24px);
         }
 
-        /* Segment Log */
+        /* ─── Segment Log ────────────────────────────────────────────────────── */
         .segment-log-details {
-            margin-top: 1rem;
+            margin-top: calc(var(--unit) * 2);
         }
 
         .segment-log-details summary {
             cursor: pointer;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            padding: 0.5rem 0;
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+            font-family: var(--font-mono);
+            padding: calc(var(--unit) * 1) 0;
             user-select: none;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: calc(var(--unit) * 1);
+        }
+
+        .segment-log-details summary::before {
+            content: '▶';
+            font-size: 0.625rem;
+            transition: transform 0.15s;
+        }
+
+        .segment-log-details[open] summary::before {
+            transform: rotate(90deg);
         }
 
         .segment-log-details summary:hover {
-            color: var(--text-primary);
+            color: var(--white);
         }
 
         .segment-log-details[open] summary {
-            margin-bottom: 0.5rem;
+            margin-bottom: calc(var(--unit) * 1);
         }
 
         .segment-log {
             max-height: 200px;
             overflow-y: auto;
-            background: var(--background);
-            border: 1px solid var(--border-color);
+            background: var(--black);
+            border: 1px solid var(--border);
             border-radius: 8px;
+            font-family: var(--font-mono);
         }
 
         .segment-log-header {
             display: grid;
-            grid-template-columns: 80px 1fr 80px 80px;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--surface-light);
-            font-size: 0.7rem;
-            color: var(--text-secondary);
+            grid-template-columns: 70px 1fr 80px 80px;
+            gap: calc(var(--unit) * 1);
+            padding: calc(var(--unit) * 1) calc(var(--unit) * 2);
+            background: var(--charcoal);
+            font-size: 0.625rem;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
             position: sticky;
             top: 0;
         }
 
         .segment-log-entry {
             display: grid;
-            grid-template-columns: 80px 1fr 80px 80px;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
-            font-family: 'Monaco', 'Menlo', monospace;
-            border-bottom: 1px solid var(--border-color);
+            grid-template-columns: 70px 1fr 80px 80px;
+            gap: calc(var(--unit) * 1);
+            padding: calc(var(--unit) * 1) calc(var(--unit) * 2);
+            font-size: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
         }
 
         .segment-log-entry:last-child {
@@ -537,78 +684,92 @@
         }
 
         .segment-type {
-            padding: 0.15rem 0.4rem;
+            padding: 2px 6px;
             border-radius: 3px;
-            font-size: 0.7rem;
+            font-size: 0.625rem;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
 
-        .segment-type.video {
-            background: rgba(96, 165, 250, 0.2);
-            color: #60a5fa;
-        }
-
-        .segment-type.audio {
-            background: rgba(74, 222, 128, 0.2);
-            color: #4ade80;
-        }
-
-        .segment-type.init {
-            background: rgba(251, 191, 36, 0.2);
-            color: #fbbf24;
-        }
-
-        .segment-type.cached {
-            background: rgba(156, 163, 175, 0.2);
-            color: #9ca3af;
-        }
+        .segment-type.video   { background: rgba(0, 114, 227, 0.2); color: #60aaff; }
+        .segment-type.audio   { background: rgba(0, 170, 60, 0.2);  color: #34c95e; }
+        .segment-type.init    { background: rgba(255, 178, 0, 0.15); color: #FFB200; }
+        .segment-type.cached  { background: rgba(130, 140, 151, 0.15); color: var(--gray); }
 
         .segment-log-entry.cached {
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
+        /* ─── Divider ────────────────────────────────────────────────────────── */
         .section-divider {
             border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 1.5rem 0;
+            border-top: 1px solid var(--border);
+            margin: calc(var(--unit) * 3) 0;
         }
 
-        /* Footer */
+        /* ─── Footer ─────────────────────────────────────────────────────────── */
         footer {
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
+            margin-top: calc(var(--unit) * 6);
+            padding-top: calc(var(--unit) * 4);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: calc(var(--unit) * 2);
         }
 
-        footer a {
-            color: var(--primary-color);
+        .footer-brand {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .footer-brand strong {
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: calc(var(--unit) * 3);
+        }
+
+        .footer-links a {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
             text-decoration: none;
+            letter-spacing: 0.03em;
+            transition: color 0.15s;
         }
 
-        footer a:hover {
-            text-decoration: underline;
+        .footer-links a:hover {
+            color: var(--pink);
         }
 
-        /* Responsive */
+        /* ─── Responsive ─────────────────────────────────────────────────────── */
         @media (max-width: 600px) {
             .container {
-                padding: 1rem;
+                padding: calc(var(--unit) * 2);
             }
 
-            header h1 {
-                font-size: 1.5rem;
+            header {
+                flex-direction: column-reverse;
+                gap: calc(var(--unit) * 2);
             }
 
             .billing-highlight {
-                flex-direction: column;
+                grid-template-columns: 1fr;
                 text-align: center;
             }
 
-            .billing-value {
-                font-size: 2rem;
+            .billing-vs {
+                text-align: center;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
 
             .btn-group {
@@ -618,31 +779,63 @@
             .btn {
                 width: 100%;
             }
+
+            footer {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-links {
+                justify-content: center;
+            }
+        }
+
+        /* ─── Form row ───────────────────────────────────────────────────────── */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: calc(var(--unit) * 2);
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- ─── Header ─────────────────────────────────────────────────────── -->
         <header>
-            <h1>Mux Minutes Delivered Calculator</h1>
-            <p class="subtitle">See exactly how delivery billing is calculated as video segments are sent to your player</p>
+            <div class="header-content">
+                <div class="header-eyebrow">Mux Video Pricing</div>
+                <h1>Minutes Delivered<br><span>Calculator</span></h1>
+                <p class="subtitle">See exactly how delivery billing is calculated as video segments are sent to your player — including buffered content you haven't watched yet.</p>
+            </div>
+            <div class="mux-logo" aria-label="Mux">Mux</div>
         </header>
 
+        <!-- ─── Config Form ────────────────────────────────────────────────── -->
         <form id="player-form">
-            <div class="form-group">
-                <label for="playback-id">
-                    Playback ID
-                    <span class="label-hint">- The Mux playback ID for the video</span>
-                </label>
-                <input type="text" id="playback-id" placeholder="e.g., VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" value="VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" required>
+            <div class="card">
+                <div class="section-label">Playback</div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="playback-id">
+                        Playback ID
+                        <span class="label-hint">— the Mux playback ID for the video</span>
+                    </label>
+                    <input type="text" id="playback-id" placeholder="e.g., VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" value="VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc" required>
+                </div>
             </div>
 
-            <div class="buffer-config">
+            <div class="card">
+                <div class="section-label">Buffer Configuration</div>
                 <div class="buffer-config-header">
-                    <span>Buffer Configuration</span>
-                    <span class="label-hint">— controls how much video is downloaded ahead of playback</span>
+                    Buffer Settings
+                    <span class="label-hint"> — controls how much video is downloaded ahead of playback</span>
                 </div>
-                <div class="form-group" style="margin-bottom: 0.5rem;">
+                <div class="form-group" style="margin-bottom: calc(var(--unit) * 1);">
                     <label for="buffer-preset">Preset</label>
                     <select id="buffer-preset">
                         <option value="performance">Performance optimised — maximum buffer for smooth playback</option>
@@ -655,21 +848,21 @@
                     <div class="form-group">
                         <label for="max-buffer-length">
                             maxBufferLength
-                            <span class="label-hint">— max forward buffer in seconds</span>
+                            <span class="label-hint">— max forward buffer (s)</span>
                         </label>
                         <input type="number" id="max-buffer-length" placeholder="30" min="1" step="1">
                     </div>
                     <div class="form-group">
                         <label for="max-buffer-size">
                             maxBufferSize
-                            <span class="label-hint">— min buffer size in MB</span>
+                            <span class="label-hint">— min buffer size (MB)</span>
                         </label>
                         <input type="number" id="max-buffer-size" placeholder="60" min="1" step="1">
                     </div>
                     <div class="form-group">
                         <label for="max-max-buffer-length">
                             maxMaxBufferLength
-                            <span class="label-hint">— hard cap in seconds</span>
+                            <span class="label-hint">— hard cap (s)</span>
                         </label>
                         <input type="number" id="max-max-buffer-length" placeholder="600" min="1" step="1">
                     </div>
@@ -683,50 +876,50 @@
             </div>
         </form>
 
+        <!-- ─── Player Section ─────────────────────────────────────────────── -->
         <div class="player-section" id="player-section" style="display: none;">
-            <div class="player-wrapper" id="player-wrapper">
-                <div class="player-placeholder" id="player-placeholder">
-                    <div class="player-placeholder-icon">&#9658;</div>
-                    <div>Enter a playback ID and click "Load Player"</div>
-                </div>
-            </div>
+            <div class="player-wrapper" id="player-wrapper"></div>
 
-
-            <div class="player-info" id="player-info">
-                <h3>Player Info</h3>
+            <!-- Player Info -->
+            <div class="card">
+                <div class="section-label">Player Info</div>
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="info-label">Duration</span>
-                        <span class="info-value" id="info-duration">-</span>
+                        <span class="info-value" id="info-duration">—</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Current Time</span>
-                        <span class="info-value" id="info-current-time">-</span>
+                        <span class="info-value" id="info-current-time">—</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">State</span>
-                        <span class="info-value" id="info-state">-</span>
+                        <span class="info-value" id="info-state">—</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Volume</span>
-                        <span class="info-value" id="info-volume">-</span>
+                        <span class="info-value" id="info-volume">—</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Buffered</span>
-                        <span class="info-value" id="info-buffered">-</span>
+                        <span class="info-value" id="info-buffered">—</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Stream Type</span>
-                        <span class="info-value" id="info-stream-type">-</span>
+                        <span class="info-value" id="info-stream-type">—</span>
                     </div>
                 </div>
             </div>
 
-            <div class="player-info">
-                <div class="education-header">
-                    <h3>Understanding Delivery Billing</h3>
-                    <p class="education-intro">Mux measures <strong>minutes delivered</strong> by counting the seconds of video sent to the player. This includes buffered content&mdash;if the player buffers 20 seconds ahead, those 20 seconds count toward delivery even if they're never watched.</p>
-                </div>
+            <!-- Delivery Billing -->
+            <div class="card delivery-section">
+                <div class="section-label">Understanding Delivery Billing</div>
+                <h3>Watch Time vs. Minutes Delivered</h3>
+                <p class="delivery-intro">
+                    Mux measures <strong>minutes delivered</strong> by counting the seconds of video sent to the player.
+                    This includes buffered content — if the player buffers 20 seconds ahead, those 20 seconds count
+                    toward delivery even if they're never watched.
+                </p>
 
                 <div class="billing-highlight">
                     <div class="billing-main" data-tooltip="How long you've actually watched the video.">
@@ -741,7 +934,7 @@
                 </div>
 
                 <div class="insight-box" id="insight-box">
-                    <div class="insight-icon">&#128161;</div>
+                    <div class="insight-icon">💡</div>
                     <div class="insight-text" id="insight-text">Start playback to see delivery insights. Notice how buffering ahead adds to minutes delivered even before you watch that content.</div>
                 </div>
 
@@ -790,8 +983,15 @@
             </div>
         </div>
 
+        <!-- ─── Footer ─────────────────────────────────────────────────────── -->
         <footer>
-            <p>Built with <a href="https://mux.com" target="_blank">Mux</a> | <a href="https://www.mux.com/docs/pricing/video" target="_blank">Full Pricing Details</a></p>
+            <div class="footer-brand">
+                Built with <strong>Mux</strong> — video infrastructure for developers
+            </div>
+            <nav class="footer-links">
+                <a href="https://mux.com" target="_blank" rel="noopener">mux.com</a>
+                <a href="https://www.mux.com/docs/pricing/video" target="_blank" rel="noopener">Pricing Docs</a>
+            </nav>
         </footer>
     </div>
 
@@ -826,9 +1026,10 @@
             let chartCtx = null;
             let minutesChartCtx = null;
 
+            // Mux brand palette for charts
             const renditionColors = [
-                '#fa50b5', '#60a5fa', '#4ade80', '#fbbf24',
-                '#f472b6', '#a78bfa', '#34d399', '#fb923c'
+                '#FA50B5', '#FFB200', '#00AA3C', '#0072E3',
+                '#FF6100', '#EA3737', '#828C97', '#E2E4DD'
             ];
 
             const bufferPresets = {
@@ -860,18 +1061,17 @@
 
             applyPresetDescription('performance');
 
-            // Form submission
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
                 loadPlayer();
             });
 
-            // Clear button
             clearBtn.addEventListener('click', () => {
                 destroyPlayer();
                 form.reset();
                 document.getElementById('playback-id').value = 'VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc';
                 playerSection.style.display = 'none';
+                applyPresetDescription('performance');
             });
 
             function loadPlayer() {
@@ -885,7 +1085,7 @@
 
                 muxPlayer = document.createElement('mux-player');
                 muxPlayer.setAttribute('playback-id', playbackId);
-                muxPlayer.style.setProperty('--media-accent-color', '#fa50b5');
+                muxPlayer.style.setProperty('--media-accent-color', '#FA50B5');
 
                 playerWrapper.innerHTML = '';
                 playerWrapper.appendChild(muxPlayer);
@@ -926,7 +1126,6 @@
                 const checkHls = () => {
                     const hls = muxPlayer._hls;
                     if (hls) {
-                        // Apply buffer config
                         const maxBufferLength = document.getElementById('max-buffer-length').value;
                         const maxBufferSize = document.getElementById('max-buffer-size').value;
                         const maxMaxBufferLength = document.getElementById('max-max-buffer-length').value;
@@ -1070,7 +1269,6 @@
                 while (entries.children.length > 50) {
                     entries.removeChild(entries.lastChild);
                 }
-
             }
 
             function getWatchTime() {
@@ -1107,10 +1305,8 @@
                 let insight = '';
 
                 if (delivered === 0) {
-                    insight = 'Start playback to see delivery in action. Watch how buffering ahead increases minutes delivered&mdash;the player downloads segments before you watch them.';
+                    insight = 'Start playback to see delivery in action. Watch how buffering ahead increases minutes delivered — the player downloads segments before you watch them.';
                 } else if (switches > 0 && renditions.length > 1) {
-                    const sorted = renditions.sort((a, b) => (b.duration || 0) - (a.duration || 0));
-                    const topRendition = sorted[0];
                     insight = `<strong>Quality switching detected:</strong> ${formatDuration(delivered)} delivered across ${renditions.length} quality levels. Quality changes may re-download segments at the new bitrate. Remember: all resolutions cost the same per minute delivered.`;
                 } else if (renditions.length > 1) {
                     const sorted = renditions.sort((a, b) => (b.duration || 0) - (a.duration || 0));
@@ -1133,10 +1329,7 @@
 
             function drawCharts() {
                 const renditions = Object.entries(dataUsage.byRendition)
-                    .map(([level, data]) => ({
-                        level: parseInt(level),
-                        ...data
-                    }))
+                    .map(([level, data]) => ({ level: parseInt(level), ...data }))
                     .sort((a, b) => {
                         const resA = parseInt(a.resolution) || 0;
                         const resB = parseInt(b.resolution) || 0;
@@ -1150,10 +1343,7 @@
             function drawDataChart(renditions) {
                 const canvas = document.getElementById('data-chart');
                 if (!canvas) return;
-
-                if (!chartCtx) {
-                    chartCtx = canvas.getContext('2d');
-                }
+                if (!chartCtx) chartCtx = canvas.getContext('2d');
 
                 const ctx = chartCtx;
                 const dpr = window.devicePixelRatio || 1;
@@ -1163,78 +1353,68 @@
                 canvas.width = drawWidth * dpr;
                 canvas.height = drawHeight * dpr;
                 ctx.scale(dpr, dpr);
-
                 ctx.clearRect(0, 0, drawWidth, drawHeight);
 
                 if (renditions.length === 0) {
-                    ctx.fillStyle = '#a0a0a0';
-                    ctx.font = '12px system-ui';
+                    ctx.fillStyle = '#565E67';
+                    ctx.font = '12px JetBrains Mono, monospace';
                     ctx.textAlign = 'center';
                     ctx.fillText('Waiting for video data...', drawWidth / 2, drawHeight / 2);
                     return;
                 }
 
                 const totalVideoBytes = renditions.reduce((sum, r) => sum + r.bytes, 0);
-
                 const centerX = drawWidth * 0.35;
                 const centerY = drawHeight / 2;
                 const radius = Math.min(drawWidth * 0.3, drawHeight * 0.4);
-
                 let startAngle = -Math.PI / 2;
 
                 renditions.forEach((rendition, index) => {
                     const sliceAngle = (rendition.bytes / totalVideoBytes) * Math.PI * 2;
                     const endAngle = startAngle + sliceAngle;
-
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY);
                     ctx.arc(centerX, centerY, radius, startAngle, endAngle);
                     ctx.closePath();
                     ctx.fillStyle = renditionColors[index % renditionColors.length];
                     ctx.fill();
-
-                    ctx.strokeStyle = '#1a1a1a';
+                    ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-
                     startAngle = endAngle;
                 });
 
+                // Donut hole
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius * 0.5, 0, Math.PI * 2);
-                ctx.fillStyle = '#1a1a1a';
+                ctx.fillStyle = '#000000';
                 ctx.fill();
 
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 14px system-ui';
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 13px JetBrains Mono, monospace';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(formatBytes(totalVideoBytes), centerX, centerY - 8);
-                ctx.fillStyle = '#a0a0a0';
-                ctx.font = '10px system-ui';
+                ctx.fillStyle = '#828C97';
+                ctx.font = '10px JetBrains Mono, monospace';
                 ctx.fillText('Video Total', centerX, centerY + 10);
 
                 const legendX = drawWidth * 0.55;
                 let legendY = 20;
                 const legendSpacing = 28;
-
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
 
                 renditions.forEach((rendition, index) => {
                     const percent = ((rendition.bytes / totalVideoBytes) * 100).toFixed(1);
-
                     ctx.fillStyle = renditionColors[index % renditionColors.length];
                     ctx.fillRect(legendX, legendY - 6, 12, 12);
-
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 12px system-ui';
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.font = 'bold 12px JetBrains Mono, monospace';
                     ctx.fillText(rendition.resolution, legendX + 18, legendY);
-
-                    ctx.fillStyle = '#a0a0a0';
-                    ctx.font = '11px system-ui';
+                    ctx.fillStyle = '#828C97';
+                    ctx.font = '11px JetBrains Mono, monospace';
                     ctx.fillText(`${formatBytes(rendition.bytes)} (${percent}%)`, legendX + 18, legendY + 14);
-
                     legendY += legendSpacing;
                 });
             }
@@ -1242,10 +1422,7 @@
             function drawMinutesChart(renditions) {
                 const canvas = document.getElementById('minutes-chart');
                 if (!canvas) return;
-
-                if (!minutesChartCtx) {
-                    minutesChartCtx = canvas.getContext('2d');
-                }
+                if (!minutesChartCtx) minutesChartCtx = canvas.getContext('2d');
 
                 const ctx = minutesChartCtx;
                 const dpr = window.devicePixelRatio || 1;
@@ -1255,22 +1432,13 @@
                 canvas.width = drawWidth * dpr;
                 canvas.height = drawHeight * dpr;
                 ctx.scale(dpr, dpr);
-
                 ctx.clearRect(0, 0, drawWidth, drawHeight);
-
-                if (renditions.length === 0) {
-                    ctx.fillStyle = '#a0a0a0';
-                    ctx.font = '12px system-ui';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Waiting for video data...', drawWidth / 2, drawHeight / 2);
-                    return;
-                }
 
                 const totalDuration = renditions.reduce((sum, r) => sum + (r.duration || 0), 0);
 
-                if (totalDuration === 0) {
-                    ctx.fillStyle = '#a0a0a0';
-                    ctx.font = '12px system-ui';
+                if (renditions.length === 0 || totalDuration === 0) {
+                    ctx.fillStyle = '#565E67';
+                    ctx.font = '12px JetBrains Mono, monospace';
                     ctx.textAlign = 'center';
                     ctx.fillText('Waiting for video data...', drawWidth / 2, drawHeight / 2);
                     return;
@@ -1279,90 +1447,70 @@
                 const centerX = drawWidth * 0.35;
                 const centerY = drawHeight / 2;
                 const radius = Math.min(drawWidth * 0.3, drawHeight * 0.4);
-
                 let startAngle = -Math.PI / 2;
 
                 renditions.forEach((rendition, index) => {
                     const duration = rendition.duration || 0;
                     if (duration === 0) return;
-
                     const sliceAngle = (duration / totalDuration) * Math.PI * 2;
                     const endAngle = startAngle + sliceAngle;
-
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY);
                     ctx.arc(centerX, centerY, radius, startAngle, endAngle);
                     ctx.closePath();
                     ctx.fillStyle = renditionColors[index % renditionColors.length];
                     ctx.fill();
-
-                    ctx.strokeStyle = '#1a1a1a';
+                    ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-
                     startAngle = endAngle;
                 });
 
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius * 0.5, 0, Math.PI * 2);
-                ctx.fillStyle = '#1a1a1a';
+                ctx.fillStyle = '#000000';
                 ctx.fill();
 
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 14px system-ui';
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 13px JetBrains Mono, monospace';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(formatDuration(totalDuration), centerX, centerY - 8);
-                ctx.fillStyle = '#a0a0a0';
-                ctx.font = '10px system-ui';
+                ctx.fillStyle = '#828C97';
+                ctx.font = '10px JetBrains Mono, monospace';
                 ctx.fillText('Total Minutes', centerX, centerY + 10);
 
                 const legendX = drawWidth * 0.55;
                 let legendY = 20;
                 const legendSpacing = 28;
-
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
 
                 renditions.forEach((rendition, index) => {
                     const duration = rendition.duration || 0;
                     if (duration === 0) return;
-
                     const percent = ((duration / totalDuration) * 100).toFixed(1);
-
                     ctx.fillStyle = renditionColors[index % renditionColors.length];
                     ctx.fillRect(legendX, legendY - 6, 12, 12);
-
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 12px system-ui';
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.font = 'bold 12px JetBrains Mono, monospace';
                     ctx.fillText(rendition.resolution, legendX + 18, legendY);
-
-                    ctx.fillStyle = '#a0a0a0';
-                    ctx.font = '11px system-ui';
+                    ctx.fillStyle = '#828C97';
+                    ctx.font = '11px JetBrains Mono, monospace';
                     ctx.fillText(`${formatDuration(duration)} (${percent}%)`, legendX + 18, legendY + 14);
-
                     legendY += legendSpacing;
                 });
             }
 
             function destroyPlayer() {
-                if (infoInterval) {
-                    clearInterval(infoInterval);
-                    infoInterval = null;
-                }
-
-                if (watchTimeInterval) {
-                    clearInterval(watchTimeInterval);
-                    watchTimeInterval = null;
-                }
+                if (infoInterval) { clearInterval(infoInterval); infoInterval = null; }
+                if (watchTimeInterval) { clearInterval(watchTimeInterval); watchTimeInterval = null; }
                 watchTimeStart = null;
                 accumulatedWatchTime = 0;
 
                 if (muxPlayer) {
                     const hls = muxPlayer._hls;
-                    if (hls) {
-                        hls.off('hlsFragLoaded');
-                    }
+                    if (hls) hls.off('hlsFragLoaded');
                     muxPlayer.remove();
                     muxPlayer = null;
                 }
@@ -1372,12 +1520,8 @@
             }
 
             function startWatchTimer() {
-                if (watchTimeStart === null) {
-                    watchTimeStart = Date.now();
-                }
-                if (!watchTimeInterval) {
-                    watchTimeInterval = setInterval(updateDataUsageDisplay, 100);
-                }
+                if (watchTimeStart === null) watchTimeStart = Date.now();
+                if (!watchTimeInterval) watchTimeInterval = setInterval(updateDataUsageDisplay, 100);
             }
 
             function stopWatchTimer() {
@@ -1390,43 +1534,15 @@
             function setupPlayerEvents() {
                 if (!muxPlayer) return;
 
-                muxPlayer.addEventListener('play', () => {
-                    startWatchTimer();
-                    updateState('Playing');
-                });
-                muxPlayer.addEventListener('pause', () => {
-                    stopWatchTimer();
-                    updateState('Paused');
-                });
-                muxPlayer.addEventListener('waiting', () => {
-                    stopWatchTimer();
-                    updateState('Buffering');
-                });
-                muxPlayer.addEventListener('playing', () => {
-                    startWatchTimer();
-                    updateState('Playing');
-                });
-                muxPlayer.addEventListener('ended', () => {
-                    stopWatchTimer();
-                    updateState('Ended');
-                });
-                muxPlayer.addEventListener('error', (e) => {
-                    stopWatchTimer();
-                    updateState('Error');
-                    console.error('Player error:', e);
-                });
-                muxPlayer.addEventListener('seeking', () => {
-                    stopWatchTimer();
-                });
-                muxPlayer.addEventListener('seeked', () => {
-                    if (!muxPlayer.paused) {
-                        startWatchTimer();
-                    }
-                });
-
-                muxPlayer.addEventListener('loadedmetadata', () => {
-                    updateInfo();
-                });
+                muxPlayer.addEventListener('play',    () => { startWatchTimer(); updateState('Playing'); });
+                muxPlayer.addEventListener('pause',   () => { stopWatchTimer();  updateState('Paused'); });
+                muxPlayer.addEventListener('waiting', () => { stopWatchTimer();  updateState('Buffering'); });
+                muxPlayer.addEventListener('playing', () => { startWatchTimer(); updateState('Playing'); });
+                muxPlayer.addEventListener('ended',   () => { stopWatchTimer();  updateState('Ended'); });
+                muxPlayer.addEventListener('error',   (e) => { stopWatchTimer(); updateState('Error'); console.error('Player error:', e); });
+                muxPlayer.addEventListener('seeking', () => { stopWatchTimer(); });
+                muxPlayer.addEventListener('seeked',  () => { if (!muxPlayer.paused) startWatchTimer(); });
+                muxPlayer.addEventListener('loadedmetadata', () => { updateInfo(); });
             }
 
             function startInfoUpdates() {
@@ -1436,19 +1552,15 @@
 
             function updateInfo() {
                 if (!muxPlayer) return;
-
                 const duration = muxPlayer.duration;
-                document.getElementById('info-duration').textContent =
-                    isFinite(duration) ? formatTime(duration) : '-';
+                document.getElementById('info-duration').textContent = isFinite(duration) ? formatTime(duration) : '—';
 
                 const currentTime = muxPlayer.currentTime;
-                document.getElementById('info-current-time').textContent =
-                    isFinite(currentTime) ? formatTime(currentTime) : '-';
+                document.getElementById('info-current-time').textContent = isFinite(currentTime) ? formatTime(currentTime) : '—';
 
                 const volume = muxPlayer.volume;
                 const muted = muxPlayer.muted;
-                document.getElementById('info-volume').textContent =
-                    muted ? 'Muted' : `${Math.round(volume * 100)}%`;
+                document.getElementById('info-volume').textContent = muted ? 'Muted' : `${Math.round(volume * 100)}%`;
 
                 const buffered = muxPlayer.buffered;
                 if (buffered && buffered.length > 0) {
@@ -1458,7 +1570,6 @@
                 } else {
                     document.getElementById('info-buffered').textContent = '0%';
                 }
-
                 document.getElementById('info-stream-type').textContent = 'on-demand';
             }
 
@@ -1467,15 +1578,11 @@
             }
 
             function formatTime(seconds) {
-                if (!isFinite(seconds)) return '-';
-
+                if (!isFinite(seconds)) return '—';
                 const h = Math.floor(seconds / 3600);
                 const m = Math.floor((seconds % 3600) / 60);
                 const s = Math.floor(seconds % 60);
-
-                if (h > 0) {
-                    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                }
+                if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
                 return `${m}:${s.toString().padStart(2, '0')}`;
             }
 
