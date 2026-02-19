@@ -634,6 +634,13 @@
                     <span>Buffer Configuration</span>
                     <span class="label-hint">— controls how much video is downloaded ahead of playback</span>
                 </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="buffer-preset">Preset</label>
+                    <select id="buffer-preset">
+                        <option value="default">Default — performance optimised</option>
+                        <option value="cost">Cost optimised — lower buffer to reduce minutes delivered</option>
+                    </select>
+                </div>
                 <div class="buffer-config-fields">
                     <div class="form-group">
                         <label for="max-buffer-length">
@@ -813,6 +820,18 @@
                 '#fa50b5', '#60a5fa', '#4ade80', '#fbbf24',
                 '#f472b6', '#a78bfa', '#34d399', '#fb923c'
             ];
+
+            const bufferPresets = {
+                default: { maxBufferLength: 30, maxBufferSize: 60, maxMaxBufferLength: 600 },
+                cost:    { maxBufferLength: 5,  maxBufferSize: 10, maxMaxBufferLength: 10  }
+            };
+
+            document.getElementById('buffer-preset').addEventListener('change', (e) => {
+                const preset = bufferPresets[e.target.value];
+                document.getElementById('max-buffer-length').value = preset.maxBufferLength;
+                document.getElementById('max-buffer-size').value = preset.maxBufferSize;
+                document.getElementById('max-max-buffer-length').value = preset.maxMaxBufferLength;
+            });
 
             // Form submission
             form.addEventListener('submit', (e) => {
