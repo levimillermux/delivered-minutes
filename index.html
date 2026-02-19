@@ -190,6 +190,14 @@
             line-height: 1.5;
         }
 
+        .buffer-preset-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            min-height: 1.2em;
+        }
+
         @media (max-width: 700px) {
             .buffer-config-fields {
                 grid-template-columns: 1fr;
@@ -634,13 +642,15 @@
                     <span>Buffer Configuration</span>
                     <span class="label-hint">— controls how much video is downloaded ahead of playback</span>
                 </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
+                <div class="form-group" style="margin-bottom: 0.5rem;">
                     <label for="buffer-preset">Preset</label>
                     <select id="buffer-preset">
-                        <option value="default">Default — performance optimised</option>
-                        <option value="cost">Cost optimised — lower buffer to reduce minutes delivered</option>
+                        <option value="performance">Performance optimised — maximum buffer for smooth playback</option>
+                        <option value="balanced">Balanced — moderate buffer, reduced delivery cost</option>
+                        <option value="cost">Cost optimised — minimal buffer to minimise minutes delivered</option>
                     </select>
                 </div>
+                <p class="buffer-preset-description" id="buffer-preset-description"></p>
                 <div class="buffer-config-fields">
                     <div class="form-group">
                         <label for="max-buffer-length">
@@ -822,16 +832,33 @@
             ];
 
             const bufferPresets = {
-                default: { maxBufferLength: 30, maxBufferSize: 60, maxMaxBufferLength: 600 },
-                cost:    { maxBufferLength: 5,  maxBufferSize: 10, maxMaxBufferLength: 10  }
+                performance: {
+                    maxBufferLength: 30, maxBufferSize: 60, maxMaxBufferLength: 600,
+                    description: 'Uses hls.js defaults. Buffers up to 30 seconds ahead for smooth, uninterrupted playback. Best for viewers on stable connections where experience is the priority.'
+                },
+                balanced: {
+                    maxBufferLength: 10, maxBufferSize: 20, maxMaxBufferLength: 20,
+                    description: 'A middle ground. Buffers ~10 seconds ahead — enough to handle brief network hiccups while meaningfully reducing the amount of video delivered before it\'s watched.'
+                },
+                cost: {
+                    maxBufferLength: 5, maxBufferSize: 10, maxMaxBufferLength: 10,
+                    description: 'Keeps the buffer as short as possible to minimise minutes delivered. Higher risk of rebuffering on slower or unstable connections. Best suited for controlled network environments.'
+                }
             };
+
+            function applyPresetDescription(value) {
+                document.getElementById('buffer-preset-description').textContent = bufferPresets[value].description;
+            }
 
             document.getElementById('buffer-preset').addEventListener('change', (e) => {
                 const preset = bufferPresets[e.target.value];
                 document.getElementById('max-buffer-length').value = preset.maxBufferLength;
                 document.getElementById('max-buffer-size').value = preset.maxBufferSize;
                 document.getElementById('max-max-buffer-length').value = preset.maxMaxBufferLength;
+                applyPresetDescription(e.target.value);
             });
+
+            applyPresetDescription('performance');
 
             // Form submission
             form.addEventListener('submit', (e) => {
