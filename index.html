@@ -278,16 +278,63 @@
             flex-wrap: wrap;
         }
 
-        /* ─── Buffer Config ───────────────────────────────────────────────────── */
-        .buffer-config-header {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: calc(var(--unit) * 2);
+        /* ─── Buffer Config toggle ───────────────────────────────────────────── */
+        .buffer-details {
+            cursor: default;
         }
 
-        .buffer-config-header .label-hint {
-            font-weight: 400;
+        .buffer-details > summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: calc(var(--unit) * 2);
+            user-select: none;
+            margin-bottom: 0;
+        }
+
+        .buffer-details > summary::-webkit-details-marker { display: none; }
+
+        .buffer-summary-title {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: calc(var(--unit) * 1);
+        }
+
+        .buffer-summary-title::before {
+            content: '▶';
+            font-size: 0.5rem;
+            transition: transform 0.15s;
+            color: var(--text-muted);
+        }
+
+        .buffer-details[open] > summary .buffer-summary-title::before {
+            transform: rotate(90deg);
+        }
+
+        .buffer-summary-badge {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            color: var(--pink);
+            background: rgba(250, 80, 181, 0.1);
+            border: 1px solid rgba(250, 80, 181, 0.2);
+            border-radius: 4px;
+            padding: 2px 8px;
+            white-space: nowrap;
+        }
+
+        .buffer-details-body {
+            margin-top: calc(var(--unit) * 2.5);
+            padding-top: calc(var(--unit) * 2.5);
+            border-top: 1px solid var(--border);
         }
 
         .buffer-config-fields {
@@ -829,46 +876,48 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div class="section-label">Buffer Configuration</div>
-                <div class="buffer-config-header">
-                    Buffer Settings
-                    <span class="label-hint"> — controls how much video is downloaded ahead of playback</span>
-                </div>
-                <div class="form-group" style="margin-bottom: calc(var(--unit) * 1);">
-                    <label for="buffer-preset">Preset</label>
-                    <select id="buffer-preset">
-                        <option value="performance">Performance optimised — maximum buffer for smooth playback</option>
-                        <option value="balanced">Balanced — moderate buffer, reduced delivery cost</option>
-                        <option value="cost">Cost optimised — minimal buffer to minimise minutes delivered</option>
-                    </select>
-                </div>
-                <p class="buffer-preset-description" id="buffer-preset-description"></p>
-                <div class="buffer-config-fields">
-                    <div class="form-group">
-                        <label for="max-buffer-length">
-                            maxBufferLength
-                            <span class="label-hint">— max forward buffer (s)</span>
-                        </label>
-                        <input type="number" id="max-buffer-length" placeholder="30" min="1" step="1">
+            <details class="card buffer-details" id="buffer-details">
+                <summary class="buffer-summary">
+                    <span class="buffer-summary-title">Buffer Configuration</span>
+                    <span class="buffer-summary-badge" id="buffer-summary-badge">Default</span>
+                </summary>
+                <div class="buffer-details-body">
+                    <div class="form-group" style="margin-bottom: calc(var(--unit) * 1);">
+                        <label for="buffer-preset">Preset</label>
+                        <select id="buffer-preset">
+                            <option value="default">Default — use hls.js built-in settings</option>
+                            <option value="performance">Performance optimised — maximum buffer for smooth playback</option>
+                            <option value="balanced">Balanced — moderate buffer, reduced delivery cost</option>
+                            <option value="cost">Cost optimised — minimal buffer to minimise minutes delivered</option>
+                        </select>
                     </div>
-                    <div class="form-group">
-                        <label for="max-buffer-size">
-                            maxBufferSize
-                            <span class="label-hint">— min buffer size (MB)</span>
-                        </label>
-                        <input type="number" id="max-buffer-size" placeholder="60" min="1" step="1">
+                    <p class="buffer-preset-description" id="buffer-preset-description"></p>
+                    <div class="buffer-config-fields" id="buffer-config-fields">
+                        <div class="form-group">
+                            <label for="max-buffer-length">
+                                maxBufferLength
+                                <span class="label-hint">— max forward buffer (s)</span>
+                            </label>
+                            <input type="number" id="max-buffer-length" placeholder="30" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="max-buffer-size">
+                                maxBufferSize
+                                <span class="label-hint">— min buffer size (MB)</span>
+                            </label>
+                            <input type="number" id="max-buffer-size" placeholder="60" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="max-max-buffer-length">
+                                maxMaxBufferLength
+                                <span class="label-hint">— hard cap (s)</span>
+                            </label>
+                            <input type="number" id="max-max-buffer-length" placeholder="600" min="1" step="1">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="max-max-buffer-length">
-                            maxMaxBufferLength
-                            <span class="label-hint">— hard cap (s)</span>
-                        </label>
-                        <input type="number" id="max-max-buffer-length" placeholder="600" min="1" step="1">
-                    </div>
+                    <p class="buffer-hint" id="buffer-hint">Reducing the buffer length means fewer segments are downloaded ahead of time, which lowers minutes delivered. The tradeoff is a higher risk of rebuffering on slow networks.</p>
                 </div>
-                <p class="buffer-hint">Reducing the buffer length means fewer segments are downloaded ahead of time, which lowers minutes delivered. The tradeoff is a higher risk of rebuffering on slow networks.</p>
-            </div>
+            </details>
 
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary">Load Player</button>
@@ -1033,33 +1082,53 @@
             ];
 
             const bufferPresets = {
+                default: {
+                    maxBufferLength: null, maxBufferSize: null, maxMaxBufferLength: null,
+                    description: 'Uses hls.js built-in defaults — no overrides applied. The player manages the buffer automatically.',
+                    label: 'Default'
+                },
                 performance: {
                     maxBufferLength: 30, maxBufferSize: 60, maxMaxBufferLength: 600,
-                    description: 'Uses hls.js defaults. Buffers up to 30 seconds ahead for smooth, uninterrupted playback. Best for viewers on stable connections where experience is the priority.'
+                    description: 'Buffers up to 30 seconds ahead for smooth, uninterrupted playback. Best for viewers on stable connections where experience is the priority.',
+                    label: 'Performance optimised'
                 },
                 balanced: {
                     maxBufferLength: 10, maxBufferSize: 20, maxMaxBufferLength: 20,
-                    description: 'A middle ground. Buffers ~10 seconds ahead — enough to handle brief network hiccups while meaningfully reducing the amount of video delivered before it\'s watched.'
+                    description: 'A middle ground. Buffers ~10 seconds ahead — enough to handle brief network hiccups while meaningfully reducing the amount of video delivered before it\'s watched.',
+                    label: 'Balanced'
                 },
                 cost: {
                     maxBufferLength: 5, maxBufferSize: 10, maxMaxBufferLength: 10,
-                    description: 'Keeps the buffer as short as possible to minimise minutes delivered. Higher risk of rebuffering on slower or unstable connections. Best suited for controlled network environments.'
+                    description: 'Keeps the buffer as short as possible to minimise minutes delivered. Higher risk of rebuffering on slower or unstable connections. Best suited for controlled network environments.',
+                    label: 'Cost optimised'
                 }
             };
 
-            function applyPresetDescription(value) {
-                document.getElementById('buffer-preset-description').textContent = bufferPresets[value].description;
+            function applyPreset(value) {
+                const preset = bufferPresets[value];
+                const isDefault = value === 'default';
+
+                // Update description
+                document.getElementById('buffer-preset-description').textContent = preset.description;
+
+                // Update badge in summary
+                document.getElementById('buffer-summary-badge').textContent = preset.label;
+
+                // Show/hide numeric fields
+                document.getElementById('buffer-config-fields').style.display = isDefault ? 'none' : 'grid';
+                document.getElementById('buffer-hint').style.display = isDefault ? 'none' : 'block';
+
+                // Set or clear field values
+                document.getElementById('max-buffer-length').value = preset.maxBufferLength ?? '';
+                document.getElementById('max-buffer-size').value = preset.maxBufferSize ?? '';
+                document.getElementById('max-max-buffer-length').value = preset.maxMaxBufferLength ?? '';
             }
 
             document.getElementById('buffer-preset').addEventListener('change', (e) => {
-                const preset = bufferPresets[e.target.value];
-                document.getElementById('max-buffer-length').value = preset.maxBufferLength;
-                document.getElementById('max-buffer-size').value = preset.maxBufferSize;
-                document.getElementById('max-max-buffer-length').value = preset.maxMaxBufferLength;
-                applyPresetDescription(e.target.value);
+                applyPreset(e.target.value);
             });
 
-            applyPresetDescription('performance');
+            applyPreset('default');
 
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -1070,8 +1139,9 @@
                 destroyPlayer();
                 form.reset();
                 document.getElementById('playback-id').value = 'VwLWM93xOArWvbzvbZO901FmRpMBjTp9VTFD7bAmJemc';
+                document.getElementById('buffer-preset').value = 'default';
                 playerSection.style.display = 'none';
-                applyPresetDescription('performance');
+                applyPreset('default');
             });
 
             function loadPlayer() {
